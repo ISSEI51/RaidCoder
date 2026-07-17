@@ -24,11 +24,11 @@ export function UserLink({
           <img
             src={avatarUrl}
             alt=""
-            className="h-5 w-5 rounded-full border border-slate-600"
+            className="h-5 w-5 rounded-full border border-border"
             loading="lazy"
           />
         ) : (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-700 text-[10px] text-slate-300">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] text-muted-foreground">
             {handle.slice(0, 1).toUpperCase()}
           </span>
         ))}

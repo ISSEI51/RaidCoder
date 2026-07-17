@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FileCode2, Flame, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RankBadge } from "@/components/RankBadge";
 import { UserLink } from "@/components/UserLink";
 import { SubmissionLive } from "@/components/SubmissionLive";
+import { Separator } from "@/components/ui/separator";
 import { languageLabel } from "@/lib/languages";
 import { formatDateTimeJst, formatInt } from "@/lib/format";
 
@@ -35,97 +37,104 @@ export default async function SubmissionPage({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 p-5">
+      {/* ヘッダー */}
+      <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-lg font-black text-slate-100">提出詳細</h1>
+          <h1 className="text-xl font-bold">提出詳細</h1>
           <StatusBadge status={submission.status} />
           {judging && <SubmissionLive submissionId={submission.id} />}
         </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="tabular-nums">
+            提出: {formatDateTimeJst(submission.created_at)}
+          </span>
+          <span className="tabular-nums">
+            判定: {formatDateTimeJst(submission.judged_at)}
+          </span>
+          <span>言語: {languageLabel(submission.language)}</span>
+        </div>
+      </header>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-6">
-          <div className="rounded-lg bg-slate-800/50 p-3">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">問題</div>
+      <Separator />
+
+      {/* 判定サマリー(カードで囲わず、密度の高いスタッツ行で見せる) */}
+      <dl className="flex flex-wrap gap-x-10 gap-y-4">
+        <div className="min-w-0">
+          <dt className="text-xs text-muted-foreground">問題</dt>
+          <dd className="mt-1 text-sm">
             {problem ? (
               <Link
                 href={`/problems/${problem.id}`}
-                className="mt-1 inline-flex items-center gap-1.5 text-sky-400 hover:underline"
+                className="inline-flex max-w-[20rem] items-center gap-1.5 text-foreground transition-colors hover:text-primary"
               >
                 <RankBadge rank={problem.rank} size="sm" />
                 <span className="truncate">{problem.title}</span>
               </Link>
             ) : (
-              <span className="text-slate-500">—</span>
+              <span className="text-muted-foreground">—</span>
             )}
-          </div>
-          <div className="rounded-lg bg-slate-800/50 p-3">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              ユーザー
-            </div>
-            <div className="mt-1">
-              {profile ? (
-                <UserLink handle={profile.handle} rating={profile.rating} />
-              ) : (
-                <span className="text-slate-500">—</span>
-              )}
-            </div>
-          </div>
-          <div className="rounded-lg bg-slate-800/50 p-3">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              テストケース
-            </div>
-            <div className="mt-1 font-mono">
-              {submission.passed_count} / {submission.total_count}
-            </div>
-          </div>
-          <div className="rounded-lg bg-slate-800/50 p-3">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              実行時間
-            </div>
-            <div className="mt-1 font-mono">
-              {submission.exec_time_ms !== null ? `${submission.exec_time_ms} ms` : "—"}
-            </div>
-          </div>
-          <div className="rounded-lg bg-slate-800/50 p-3">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              メモリ
-            </div>
-            <div className="mt-1 font-mono">
-              {submission.memory_kb !== null
-                ? `${formatInt(submission.memory_kb)} KB`
-                : "—"}
-            </div>
-          </div>
-          <div className="rounded-lg bg-slate-800/50 p-3">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              ダメージ
-            </div>
-            <div className="mt-1 font-mono font-bold text-yellow-300">
-              {submission.damage > 0 ? (
-                <>
-                  💥{formatInt(submission.damage)}
-                  {submission.is_first_blood && (
-                    <span className="ml-1 text-amber-300">⚡FB</span>
-                  )}
-                </>
-              ) : (
-                <span className="text-slate-600">0</span>
-              )}
-            </div>
-          </div>
+          </dd>
         </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-          <span>提出: {formatDateTimeJst(submission.created_at)}</span>
-          <span>判定: {formatDateTimeJst(submission.judged_at)}</span>
-          <span>言語: {languageLabel(submission.language)}</span>
+        <div>
+          <dt className="text-xs text-muted-foreground">ユーザー</dt>
+          <dd className="mt-1 text-sm">
+            {profile ? (
+              <UserLink handle={profile.handle} rating={profile.rating} />
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </dd>
         </div>
-      </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">テストケース</dt>
+          <dd className="mt-1 text-sm font-medium tabular-nums">
+            {submission.passed_count} / {submission.total_count}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">実行時間</dt>
+          <dd className="mt-1 text-sm font-medium tabular-nums">
+            {submission.exec_time_ms !== null
+              ? `${submission.exec_time_ms} ms`
+              : "—"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">メモリ</dt>
+          <dd className="mt-1 text-sm font-medium tabular-nums">
+            {submission.memory_kb !== null
+              ? `${formatInt(submission.memory_kb)} KB`
+              : "—"}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">ダメージ</dt>
+          <dd className="mt-1 text-sm font-bold tabular-nums">
+            {submission.damage > 0 ? (
+              <span className="inline-flex items-center gap-1">
+                <Flame className="size-3 text-muted-foreground" aria-hidden />
+                {formatInt(submission.damage)}
+                {submission.is_first_blood && (
+                  <span className="inline-flex items-center gap-0.5 text-primary">
+                    <Zap className="size-3" aria-hidden />
+                    FB
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="font-medium text-muted-foreground">0</span>
+            )}
+          </dd>
+        </div>
+      </dl>
 
-      <div className="overflow-hidden rounded-xl border border-slate-700/60">
-        <div className="border-b border-slate-700/60 bg-slate-800/60 px-4 py-2 text-xs font-bold text-slate-300">
+      {/* 提出コード */}
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="flex items-center gap-2 border-b border-border bg-secondary px-4 py-2 text-xs font-medium">
+          <FileCode2 className="size-4 text-muted-foreground" aria-hidden />
           提出コード({languageLabel(submission.language)})
         </div>
-        <pre className="overflow-x-auto bg-slate-950/80 px-4 py-3 font-mono text-xs leading-relaxed text-slate-200">
+        <pre className="overflow-x-auto bg-card px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
           {submission.code}
         </pre>
       </div>

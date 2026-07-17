@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // スレッド作成フォーム(problemId を渡すと問題別スレッドになる)
+// 掲示板ページでは主要操作なので primary、問題ページでは主要操作(提出)と
+// 競合しないよう secondary に落とす。
 export function NewThreadForm({
   userId,
   problemId,
@@ -45,27 +50,30 @@ export function NewThreadForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row">
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        maxLength={200}
-        placeholder={
-          problemId
-            ? "この問題について相談するスレッドを立てる…"
-            : "新しいスレッドのタイトル…"
-        }
-        className="flex-1 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500"
-      />
-      <button
-        type="submit"
-        disabled={submitting || !title.trim()}
-        className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
-      >
-        {submitting ? "作成中…" : "🧵 スレッド作成"}
-      </button>
-      {error && <p className="text-xs text-rose-400">{error}</p>}
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <Input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={200}
+          placeholder={
+            problemId
+              ? "この問題について相談するスレッドを立てる…"
+              : "新しいスレッドのタイトル…"
+          }
+          className="flex-1"
+        />
+        <Button
+          type="submit"
+          variant={problemId ? "secondary" : "default"}
+          disabled={submitting || !title.trim()}
+        >
+          <Plus aria-hidden />
+          {submitting ? "作成中…" : "スレッド作成"}
+        </Button>
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </form>
   );
 }

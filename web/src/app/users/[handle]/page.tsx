@@ -1,7 +1,16 @@
 import { notFound } from "next/navigation";
+import { History, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RatingChart } from "@/components/RatingChart";
 import { SubmissionList, type SubmissionListItem } from "@/components/SubmissionList";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ratingColorName, ratingTextClass } from "@/lib/rating";
 import { formatDateJst, formatInt } from "@/lib/format";
 
@@ -75,127 +84,138 @@ export default async function UserPage({
     };
   });
 
+  const stats: { label: string; value: string; valueClass: string }[] = [
+    {
+      label: "レーティング",
+      value: String(profile.rating),
+      valueClass: ratingTextClass(profile.rating),
+    },
+    {
+      label: "色",
+      value: ratingColorName(profile.rating),
+      valueClass: ratingTextClass(profile.rating),
+    },
+    { label: "EXP", value: formatInt(profile.exp), valueClass: "text-foreground" },
+    { label: "参加週数", value: String(events.length), valueClass: "text-foreground" },
+  ];
+
   return (
     <div className="space-y-6">
       {/* プロフィールヘッダー */}
-      <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 p-6">
+      <header className="space-y-4">
         <div className="flex flex-wrap items-center gap-4">
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={profile.avatar_url}
               alt=""
-              className="h-16 w-16 rounded-full border-2 border-slate-600"
+              className="h-16 w-16 rounded-full border border-border"
             />
           ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-700 text-2xl font-black text-slate-300">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-2xl font-bold text-muted-foreground">
               {profile.handle.slice(0, 1).toUpperCase()}
             </span>
           )}
           <div>
-            <h1 className={`text-2xl font-black ${ratingTextClass(profile.rating)}`}>
+            <h1 className={`text-xl font-bold ${ratingTextClass(profile.rating)}`}>
               {profile.handle}
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               参戦日: {formatDateJst(profile.created_at)}
             </p>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl bg-slate-800/50 p-4 text-center">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              レーティング
+        <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="bg-card px-4 py-3">
+              <dt className="text-xs text-muted-foreground">{stat.label}</dt>
+              <dd
+                className={`mt-1 text-2xl font-bold tabular-nums ${stat.valueClass}`}
+              >
+                {stat.value}
+              </dd>
             </div>
-            <div
-              className={`mt-1 font-mono text-2xl font-black ${ratingTextClass(profile.rating)}`}
-            >
-              {profile.rating}
-            </div>
-          </div>
-          <div className="rounded-xl bg-slate-800/50 p-4 text-center">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">色</div>
-            <div className={`mt-1 text-2xl font-black ${ratingTextClass(profile.rating)}`}>
-              {ratingColorName(profile.rating)}
-            </div>
-          </div>
-          <div className="rounded-xl bg-slate-800/50 p-4 text-center">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">EXP</div>
-            <div className="mt-1 font-mono text-2xl font-black text-yellow-300">
-              {formatInt(profile.exp)}
-            </div>
-          </div>
-          <div className="rounded-xl bg-slate-800/50 p-4 text-center">
-            <div className="text-[10px] font-bold tracking-widest text-slate-500">
-              参加週数
-            </div>
-            <div className="mt-1 font-mono text-2xl font-black text-slate-200">
-              {events.length}
-            </div>
-          </div>
-        </div>
-      </div>
+          ))}
+        </dl>
+      </header>
 
       {/* レート推移 */}
-      <section className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-5">
-        <h2 className="mb-3 text-sm font-black tracking-widest text-purple-300">
-          📈 レート推移
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <TrendingUp className="size-5 text-muted-foreground" aria-hidden />
+          レート推移
         </h2>
         <RatingChart events={chartEvents} />
         {events.length > 0 && (
-          <div className="mt-4 overflow-x-auto rounded-lg border border-slate-700/60">
-            <table className="w-full min-w-[480px] text-xs">
-              <thead>
-                <tr className="border-b border-slate-700/60 bg-slate-900/70 text-left text-slate-400">
-                  <th className="px-3 py-2">週</th>
-                  <th className="px-3 py-2 text-right">週間ダメージ</th>
-                  <th className="px-3 py-2 text-right">順位</th>
-                  <th className="px-3 py-2 text-right">perf</th>
-                  <th className="px-3 py-2 text-right">レート変化</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="overflow-hidden rounded-lg border border-border">
+            <Table className="min-w-[480px] text-xs">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-3 text-xs text-muted-foreground">
+                    週
+                  </TableHead>
+                  <TableHead className="px-3 text-right text-xs text-muted-foreground">
+                    週間ダメージ
+                  </TableHead>
+                  <TableHead className="px-3 text-right text-xs text-muted-foreground">
+                    順位
+                  </TableHead>
+                  <TableHead className="px-3 text-right text-xs text-muted-foreground">
+                    perf
+                  </TableHead>
+                  <TableHead className="px-3 text-right text-xs text-muted-foreground">
+                    レート変化
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {[...events].reverse().map((e) => (
-                  <tr key={e.id} className="border-b border-slate-800/60 last:border-0">
-                    <td className="px-3 py-2 font-mono">
+                  <TableRow key={e.id}>
+                    <TableCell className="px-3 tabular-nums">
                       W{weekNumberMap.get(e.week_id) ?? "?"}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono text-yellow-300">
-                      💥{formatInt(e.damage_total)}
-                    </td>
-                    <td className="px-3 py-2 text-right font-mono">#{e.rank}</td>
-                    <td className="px-3 py-2 text-right font-mono">{e.performance}</td>
-                    <td className="px-3 py-2 text-right font-mono">
+                    </TableCell>
+                    <TableCell className="px-3 text-right font-semibold tabular-nums">
+                      {formatInt(e.damage_total)}
+                    </TableCell>
+                    <TableCell className="px-3 text-right tabular-nums">
+                      #{e.rank}
+                    </TableCell>
+                    <TableCell className="px-3 text-right tabular-nums">
+                      {e.performance}
+                    </TableCell>
+                    <TableCell className="px-3 text-right tabular-nums">
                       <span className={ratingTextClass(e.rating_before)}>
                         {e.rating_before}
                       </span>
-                      <span className="mx-1 text-slate-500">→</span>
+                      <span className="mx-1 text-muted-foreground">→</span>
                       <span className={`font-bold ${ratingTextClass(e.rating_after)}`}>
                         {e.rating_after}
                       </span>
                       <span
                         className={`ml-1 ${
                           e.rating_after >= e.rating_before
-                            ? "text-emerald-400"
-                            : "text-rose-400"
+                            ? "text-primary"
+                            : "text-destructive"
                         }`}
                       >
                         ({e.rating_after >= e.rating_before ? "+" : ""}
                         {e.rating_after - e.rating_before})
                       </span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </section>
 
       {/* 直近の提出 */}
-      <section className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-5">
-        <h2 className="mb-3 text-sm font-black tracking-widest text-purple-300">
-          📤 直近の提出
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 text-lg font-bold">
+          <History className="size-5 text-muted-foreground" aria-hidden />
+          直近の提出
         </h2>
         <SubmissionList
           items={items}

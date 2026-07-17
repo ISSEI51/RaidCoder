@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
-// 投稿フォーム(Markdown 対応)
+// 投稿フォーム(Markdown 対応)。スレッドページの主要操作なので primary ボタン
 export function NewPostForm({
   threadId,
   userId,
@@ -39,23 +42,20 @@ export function NewPostForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         maxLength={20000}
         rows={4}
         placeholder="Markdown で投稿できます。アイデア相談は協力プレイの一部として歓迎!(数式は $...$)"
-        className="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-500"
+        className="min-h-24"
       />
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={submitting || !body.trim()}
-          className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-purple-500 disabled:opacity-50"
-        >
-          {submitting ? "投稿中…" : "💬 投稿する"}
-        </button>
-        {error && <p className="text-xs text-rose-400">{error}</p>}
+        <Button type="submit" disabled={submitting || !body.trim()}>
+          <Send aria-hidden />
+          {submitting ? "投稿中…" : "投稿する"}
+        </Button>
+        {error && <p className="text-xs text-destructive">{error}</p>}
       </div>
     </form>
   );

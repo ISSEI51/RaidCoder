@@ -1,12 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  BookOpen,
+  ChevronLeft,
+  Clock,
+  Flame,
+  History,
+  MemoryStick,
+  MessageSquare,
+  MessagesSquare,
+  Users,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Markdown } from "@/components/Markdown";
 import { RankBadge } from "@/components/RankBadge";
+import { BossAvatar } from "@/components/BossAvatar";
 import { SubmitPanel } from "@/components/SubmitPanel";
 import { SubmissionList, type SubmissionListItem } from "@/components/SubmissionList";
 import { Tabs } from "@/components/Tabs";
+import { Separator } from "@/components/ui/separator";
 import { NewThreadForm } from "@/components/board/NewThreadForm";
+import { characterForWeek } from "@/lib/characters";
 import { languageLabel } from "@/lib/languages";
 import { formatDateTimeJst, formatInt } from "@/lib/format";
 
@@ -77,6 +91,7 @@ export default async function ProblemPage({
   const mySubmissions = mineRes.data ?? [];
   const otherSubmissions = othersRes.data ?? [];
   const threads = threadsRes.data ?? [];
+  const boss = characterForWeek(week.week_number);
 
   // 他人の提出のユーザー情報
   const otherUserIds = [...new Set(otherSubmissions.map((s) => s.user_id))];
@@ -122,71 +137,85 @@ export default async function ProblemPage({
   return (
     <div className="space-y-6">
       {/* ヘッダー */}
-      <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 p-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-400">
+      <header className="space-y-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Link
             href={week.status === "active" ? "/" : `/archive/${week.week_number}`}
-            className="text-sky-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
-            ← WEEK {week.week_number}: {week.boss_name}
+            <ChevronLeft className="size-3" aria-hidden />
+            <BossAvatar character={boss} size={20} />
+            <span>
+              WEEK <span className="tabular-nums">{week.week_number}</span>:{" "}
+              {week.boss_name}
+            </span>
           </Link>
           {week.status === "ended" && (
-            <span className="rounded-md border border-slate-600 px-2 py-0.5">
+            <span className="rounded-md border border-border bg-secondary px-2 py-0.5 text-xs text-muted-foreground">
               終了した週(練習モード・ダメージなし)
             </span>
           )}
         </div>
-        <div className="mt-3 flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <RankBadge rank={problem.rank} size="lg" />
           <div className="min-w-0">
-            <h1 className="text-xl font-black text-slate-50 sm:text-2xl">
-              {problem.title}
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-              <span className="font-mono font-bold text-rose-300">
-                💥 基礎ダメージ {formatInt(problem.base_damage)}
+            <h1 className="truncate text-xl font-bold">{problem.title}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <Flame className="size-3" aria-hidden />
+                基礎ダメージ{" "}
+                <span className="font-medium text-foreground tabular-nums">
+                  {formatInt(problem.base_damage)}
+                </span>
               </span>
-              <span>⏱ 実行時間制限 {problem.time_limit_ms / 1000} sec</span>
-              <span>💾 メモリ制限 {Math.floor(problem.memory_limit_kb / 1024)} MB</span>
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <Clock className="size-3" aria-hidden />
+                実行時間制限 {problem.time_limit_ms / 1000} sec
+              </span>
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <MemoryStick className="size-3" aria-hidden />
+                メモリ制限 {Math.floor(problem.memory_limit_kb / 1024)} MB
+              </span>
             </div>
           </div>
         </div>
-      </div>
+      </header>
+
+      <Separator />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* 問題文 + サンプル */}
-        <section className="space-y-4">
-          <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-5">
-            <Markdown>{problem.statement_md}</Markdown>
-          </div>
+        {/* 問題文 + サンプル(可読性最優先: カードで囲わず本文をそのまま置く) */}
+        <section className="min-w-0 space-y-6">
+          <Markdown>{problem.statement_md}</Markdown>
 
           {samples.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-black tracking-widest text-purple-300">
-                📋 サンプルケース
-              </h2>
+              <h2 className="text-lg font-bold">サンプルケース</h2>
               {samples.map((sample, i) => (
                 <div
                   key={sample.id}
-                  className="overflow-hidden rounded-xl border border-slate-700/60"
+                  className="overflow-hidden rounded-lg border border-border"
                 >
-                  <div className="border-b border-slate-700/60 bg-slate-800/60 px-4 py-1.5 text-xs font-bold text-slate-300">
-                    サンプル {i + 1}({sample.name})
+                  <div className="flex items-baseline gap-2 border-b border-border bg-secondary px-3 py-1.5 text-xs font-medium">
+                    サンプル {i + 1}
+                    <span className="font-mono text-muted-foreground">
+                      {sample.name}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-1 divide-y divide-slate-700/60 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                    <div>
-                      <div className="bg-slate-900/80 px-4 pt-2 text-[10px] font-bold tracking-widest text-slate-500">
+                  <div className="grid grid-cols-1 divide-y divide-border bg-card sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+                    <div className="min-w-0">
+                      <div className="px-3 pt-2 text-xs text-muted-foreground">
                         入力
                       </div>
-                      <pre className="overflow-x-auto bg-slate-900/80 px-4 py-2 font-mono text-xs text-slate-200">
+                      <pre className="overflow-x-auto px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
                         {sample.input}
                       </pre>
                     </div>
-                    <div>
-                      <div className="bg-slate-900/80 px-4 pt-2 text-[10px] font-bold tracking-widest text-slate-500">
+                    <div className="min-w-0">
+                      <div className="px-3 pt-2 text-xs text-muted-foreground">
                         期待出力
                       </div>
-                      <pre className="overflow-x-auto bg-slate-900/80 px-4 py-2 font-mono text-xs text-slate-200">
+                      <pre className="overflow-x-auto px-3 py-2 font-mono text-xs leading-relaxed text-foreground">
                         {sample.expected_output}
                       </pre>
                     </div>
@@ -197,8 +226,8 @@ export default async function ProblemPage({
           )}
         </section>
 
-        {/* 提出パネル */}
-        <section>
+        {/* 提出パネル(このページの主要操作) */}
+        <section className="min-w-0">
           <SubmitPanel
             problemId={problem.id}
             userId={user.id}
@@ -208,22 +237,38 @@ export default async function ProblemPage({
       </div>
 
       {/* タブ: 提出履歴 / みんなの提出 / 解説 / 掲示板 */}
-      <section className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-5">
+      <section>
         <Tabs
           items={[
             {
               key: "mine",
-              label: `📤 自分の提出 (${myItems.length})`,
+              label: (
+                <span className="flex items-center gap-1.5">
+                  <History className="size-4" aria-hidden />
+                  自分の提出
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {myItems.length}
+                  </span>
+                </span>
+              ),
               content: (
                 <SubmissionList
                   items={myItems}
-                  emptyMessage="まだ提出がありません。最初の一撃を放とう!"
+                  emptyMessage="まだ提出がありません。最初の一撃を放とう"
                 />
               ),
             },
             {
               key: "others",
-              label: `👥 みんなの提出 (${otherItems.length})`,
+              label: (
+                <span className="flex items-center gap-1.5">
+                  <Users className="size-4" aria-hidden />
+                  みんなの提出
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {otherItems.length}
+                  </span>
+                </span>
+              ),
               content: (
                 <SubmissionList
                   items={otherItems}
@@ -233,24 +278,27 @@ export default async function ProblemPage({
             },
             {
               key: "editorial",
-              label: "📖 解説",
+              label: (
+                <span className="flex items-center gap-1.5">
+                  <BookOpen className="size-4" aria-hidden />
+                  解説
+                </span>
+              ),
               content: editorial ? (
                 <div className="space-y-6">
                   <Markdown>{editorial.editorial_md}</Markdown>
                   {officialSolutions.length > 0 && (
                     <div className="space-y-4">
-                      <h3 className="text-sm font-black tracking-widest text-purple-300">
-                        ✅ 公式解
-                      </h3>
+                      <h3 className="text-sm font-bold">公式解</h3>
                       {officialSolutions.map((sol, i) => (
                         <div
                           key={i}
-                          className="overflow-hidden rounded-xl border border-slate-700/60"
+                          className="overflow-hidden rounded-lg border border-border"
                         >
-                          <div className="border-b border-slate-700/60 bg-slate-800/60 px-4 py-1.5 text-xs font-bold text-slate-300">
+                          <div className="border-b border-border bg-secondary px-3 py-1.5 text-xs font-medium">
                             {languageLabel(sol.language)}
                           </div>
-                          <pre className="overflow-x-auto bg-slate-950/80 px-4 py-3 font-mono text-xs leading-relaxed text-slate-200">
+                          <pre className="overflow-x-auto bg-card px-4 py-3 font-mono text-xs leading-relaxed text-foreground">
                             {sol.code}
                           </pre>
                         </div>
@@ -259,9 +307,10 @@ export default async function ProblemPage({
                   )}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-400">
-                  📖 解説と公式解は週終了後に公開されます
-                  <p className="mt-1 text-xs text-slate-500">
+                <div className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                  <BookOpen className="mx-auto mb-2 size-5" aria-hidden />
+                  解説と公式解は週終了後に公開されます
+                  <p className="mt-1 text-xs">
                     (毎週月曜 00:00 JST の週替わりで解禁)
                   </p>
                 </div>
@@ -269,28 +318,42 @@ export default async function ProblemPage({
             },
             {
               key: "board",
-              label: `💬 掲示板 (${threads.length})`,
+              label: (
+                <span className="flex items-center gap-1.5">
+                  <MessagesSquare className="size-4" aria-hidden />
+                  掲示板
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {threads.length}
+                  </span>
+                </span>
+              ),
               content: (
                 <div className="space-y-4">
-                  <p className="text-xs text-slate-400">
-                    アイデア相談は協力プレイの一部として歓迎!
-                    <Link href="/board" className="ml-2 text-sky-400 hover:underline">
-                      掲示板全体を見る →
+                  <p className="text-xs text-muted-foreground">
+                    アイデア相談は協力プレイの一部として歓迎。
+                    <Link
+                      href="/board"
+                      className="ml-2 text-primary hover:underline"
+                    >
+                      掲示板全体を見る
                     </Link>
                   </p>
                   {threads.length > 0 ? (
-                    <ul className="space-y-1.5">
+                    <ul className="divide-y divide-border">
                       {threads.map((thread) => (
                         <li key={thread.id}>
                           <Link
                             href={`/board/${thread.id}`}
-                            className="flex items-center gap-2 rounded-lg border border-slate-700/60 bg-slate-800/40 px-3 py-2 text-sm text-slate-200 transition-colors hover:border-purple-500/60"
+                            className="flex items-center gap-2.5 py-2.5 text-sm text-foreground transition-colors hover:text-primary"
                           >
-                            <span>🧵</span>
+                            <MessageSquare
+                              className="size-4 shrink-0 text-muted-foreground"
+                              aria-hidden
+                            />
                             <span className="min-w-0 flex-1 truncate">
                               {thread.title}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                               {formatDateTimeJst(thread.created_at)}
                             </span>
                           </Link>
@@ -298,7 +361,7 @@ export default async function ProblemPage({
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-muted-foreground">
                       この問題のスレッドはまだありません。
                     </p>
                   )}

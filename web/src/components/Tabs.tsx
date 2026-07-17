@@ -1,42 +1,45 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import {
+  Tabs as ShadcnTabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
-// サーバーコンポーネントから content(ReactNode)を受け取る汎用タブ
+// サーバーコンポーネントから content(ReactNode)を受け取る汎用タブ。
+// shadcn/ui Tabs(ui/tabs)の薄いラッパーで、props API は従来のまま。
+// content は forceMount で常時マウントし、非アクティブ時は CSS で隠す
+// (タブ切替でフォーム入力などの状態が失われないようにする)。
 export function Tabs({
   items,
   initialKey,
 }: {
-  items: { key: string; label: string; content: ReactNode }[];
+  items: { key: string; label: ReactNode; content: ReactNode }[];
   initialKey?: string;
 }) {
-  const [active, setActive] = useState(initialKey ?? items[0]?.key);
-
   return (
-    <div>
-      <div className="flex flex-wrap gap-1 border-b border-slate-700/60">
-        {items.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => setActive(item.key)}
-            className={`-mb-px rounded-t-lg border-b-2 px-4 py-2 text-sm font-bold transition-colors ${
-              active === item.key
-                ? "border-purple-400 bg-slate-800/60 text-purple-200"
-                : "border-transparent text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
+    <ShadcnTabs defaultValue={initialKey ?? items[0]?.key}>
+      <div className="overflow-x-auto pb-1">
+        <TabsList variant="line" className="w-max justify-start">
+          {items.map((item) => (
+            <TabsTrigger key={item.key} value={item.key} className="flex-none px-3">
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
       </div>
-      <div className="pt-4">
-        {items.map((item) => (
-          <div key={item.key} className={active === item.key ? "" : "hidden"}>
-            {item.content}
-          </div>
-        ))}
-      </div>
-    </div>
+      {items.map((item) => (
+        <TabsContent
+          key={item.key}
+          value={item.key}
+          forceMount
+          className="data-[state=inactive]:hidden"
+        >
+          {item.content}
+        </TabsContent>
+      ))}
+    </ShadcnTabs>
   );
 }

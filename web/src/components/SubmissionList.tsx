@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { Flame, Zap } from "lucide-react";
 import type { ProblemRank, SubmissionStatus } from "@/lib/database.types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { RankBadge } from "@/components/RankBadge";
 import { UserLink } from "@/components/UserLink";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { languageLabel } from "@/lib/languages";
 import { formatDateTimeJst, formatInt } from "@/lib/format";
 
@@ -32,97 +41,116 @@ export function SubmissionList({
 }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-slate-700 px-4 py-6 text-center text-sm text-slate-500">
+      <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
         {emptyMessage}
       </p>
     );
   }
 
+  const showUser = items.some((i) => i.handle !== undefined);
+  const showProblem = items.some((i) => i.problemTitle !== undefined);
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-700/60">
-      <table className="w-full min-w-[560px] text-sm">
-        <thead>
-          <tr className="border-b border-slate-700/60 bg-slate-900/70 text-left text-xs text-slate-400">
-            <th className="px-3 py-2">日時</th>
-            {items.some((i) => i.handle !== undefined) && (
-              <th className="px-3 py-2">ユーザー</th>
+    <div className="overflow-hidden rounded-lg border border-border">
+      <Table className="min-w-[560px]">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="text-xs font-medium text-muted-foreground">
+              日時
+            </TableHead>
+            {showUser && (
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                ユーザー
+              </TableHead>
             )}
-            {items.some((i) => i.problemTitle !== undefined) && (
-              <th className="px-3 py-2">問題</th>
+            {showProblem && (
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                問題
+              </TableHead>
             )}
-            <th className="px-3 py-2">言語</th>
-            <th className="px-3 py-2">結果</th>
-            <th className="px-3 py-2 text-right">ダメージ</th>
-            <th className="px-3 py-2 text-right">実行時間</th>
-            <th className="px-3 py-2" />
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead className="text-xs font-medium text-muted-foreground">
+              言語
+            </TableHead>
+            <TableHead className="text-xs font-medium text-muted-foreground">
+              結果
+            </TableHead>
+            <TableHead className="text-right text-xs font-medium text-muted-foreground">
+              ダメージ
+            </TableHead>
+            <TableHead className="text-right text-xs font-medium text-muted-foreground">
+              実行時間
+            </TableHead>
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {items.map((item) => (
-            <tr
-              key={item.id}
-              className="border-b border-slate-800/60 transition-colors last:border-0 hover:bg-slate-800/30"
-            >
-              <td className="whitespace-nowrap px-3 py-2 font-mono text-xs text-slate-400">
+            <TableRow key={item.id}>
+              <TableCell className="text-xs text-muted-foreground tabular-nums">
                 {formatDateTimeJst(item.created_at)}
-              </td>
-              {items.some((i) => i.handle !== undefined) && (
-                <td className="px-3 py-2">
+              </TableCell>
+              {showUser && (
+                <TableCell>
                   {item.handle !== undefined ? (
                     <UserLink handle={item.handle} rating={item.rating ?? 0} />
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">—</span>
                   )}
-                </td>
+                </TableCell>
               )}
-              {items.some((i) => i.problemTitle !== undefined) && (
-                <td className="px-3 py-2">
+              {showProblem && (
+                <TableCell>
                   {item.problemId ? (
                     <Link
                       href={`/problems/${item.problemId}`}
-                      className="inline-flex items-center gap-1.5 text-slate-200 hover:text-purple-300"
+                      className="inline-flex items-center gap-1.5 text-foreground transition-colors hover:text-primary"
                     >
                       {item.problemRank && (
                         <RankBadge rank={item.problemRank} size="sm" />
                       )}
-                      <span className="max-w-[16rem] truncate">{item.problemTitle}</span>
+                      <span className="max-w-[16rem] truncate">
+                        {item.problemTitle}
+                      </span>
                     </Link>
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">—</span>
                   )}
-                </td>
+                </TableCell>
               )}
-              <td className="whitespace-nowrap px-3 py-2 text-xs text-slate-300">
+              <TableCell className="text-xs text-muted-foreground">
                 {languageLabel(item.language)}
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell>
                 <StatusBadge status={item.status} />
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-right font-mono text-xs">
+              </TableCell>
+              <TableCell className="text-right">
                 {item.damage > 0 ? (
-                  <span className="font-bold text-yellow-300">
-                    💥{formatInt(item.damage)}
-                    {item.is_first_blood && " ⚡"}
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-foreground tabular-nums">
+                    <Flame className="size-3 text-muted-foreground" aria-hidden />
+                    {formatInt(item.damage)}
+                    {item.is_first_blood && (
+                      <Zap className="size-3 text-primary" aria-hidden />
+                    )}
                   </span>
                 ) : (
-                  <span className="text-slate-600">—</span>
+                  <span className="text-xs text-muted-foreground">—</span>
                 )}
-              </td>
-              <td className="whitespace-nowrap px-3 py-2 text-right font-mono text-xs text-slate-400">
+              </TableCell>
+              <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                 {item.exec_time_ms !== null ? `${item.exec_time_ms} ms` : "—"}
-              </td>
-              <td className="px-3 py-2 text-right">
+              </TableCell>
+              <TableCell className="text-right">
                 <Link
                   href={`/submissions/${item.id}`}
-                  className="text-xs text-sky-400 hover:underline"
+                  className="text-xs text-primary hover:underline"
                 >
-                  詳細 →
+                  詳細
                 </Link>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

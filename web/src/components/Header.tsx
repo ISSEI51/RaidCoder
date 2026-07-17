@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ratingTextClass } from "@/lib/rating";
 import { LogoutButton } from "@/components/LogoutButton";
+import { HeaderNav } from "@/components/HeaderNav";
 
 // 全ページ共通ヘッダー(未ログイン時はロゴのみ)
 export async function Header() {
@@ -21,51 +23,41 @@ export async function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:gap-6 sm:px-6">
         <Link
           href="/"
-          className="text-lg font-black tracking-wider text-slate-100"
+          className="flex shrink-0 items-center gap-1.5 text-base font-black tracking-wide text-foreground"
         >
-          ⚔️ Raid<span className="text-purple-400">Coder</span>
+          <Swords className="size-5 text-primary" aria-hidden />
+          <span>
+            Raid<span className="text-primary">Coder</span>
+          </span>
         </Link>
 
-        {user && (
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-bold text-slate-400">
-            <Link href="/" className="transition-colors hover:text-purple-300">
-              🐉 レイド
-            </Link>
-            <Link href="/ranking" className="transition-colors hover:text-purple-300">
-              🏆 ランキング
-            </Link>
-            <Link href="/board" className="transition-colors hover:text-purple-300">
-              💬 掲示板
-            </Link>
-            <Link href="/archive" className="transition-colors hover:text-purple-300">
-              📜 アーカイブ
-            </Link>
-          </nav>
-        )}
+        {user && <HeaderNav />}
 
         {user && profile && (
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
             <Link
               href={`/users/${encodeURIComponent(profile.handle)}`}
-              className="flex items-center gap-2"
+              className="flex min-w-0 items-center gap-2"
             >
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatar_url}
                   alt=""
-                  className="h-7 w-7 rounded-full border border-slate-600"
+                  className="h-7 w-7 shrink-0 rounded-full border border-border"
                 />
               ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-700 text-xs">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-xs text-muted-foreground">
                   {profile.handle.slice(0, 1).toUpperCase()}
                 </span>
               )}
-              <span className={`text-sm font-bold ${ratingTextClass(profile.rating)}`}>
+              <span
+                className={`hidden truncate text-sm font-bold sm:inline ${ratingTextClass(profile.rating)}`}
+              >
                 {profile.handle}
               </span>
             </Link>
