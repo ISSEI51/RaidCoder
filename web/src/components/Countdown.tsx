@@ -6,7 +6,7 @@ function pad(n: number): string {
   return n.toString().padStart(2, "0");
 }
 
-// 週終了までのカウントダウン(1秒ごとに更新)
+// 週終了までのカウントダウン(1秒ごとに更新)。等幅数字で桁の揺れを防ぐ。
 export function Countdown({ endsAt }: { endsAt: string }) {
   const [now, setNow] = useState<number | null>(null);
 
@@ -18,12 +18,20 @@ export function Countdown({ endsAt }: { endsAt: string }) {
 
   // マウント前は SSR とのハイドレーション不一致を避けるためプレースホルダを出す
   if (now === null) {
-    return <span className="font-mono text-slate-400">--:--:--</span>;
+    return (
+      <span className="font-mono text-lg font-bold tabular-nums text-muted-foreground">
+        --:--:--
+      </span>
+    );
   }
 
   const diff = new Date(endsAt).getTime() - now;
   if (diff <= 0) {
-    return <span className="font-bold text-slate-400">週は終了しました</span>;
+    return (
+      <span className="text-sm font-bold text-muted-foreground">
+        週は終了しました
+      </span>
+    );
   }
 
   const totalSec = Math.floor(diff / 1000);
@@ -35,7 +43,7 @@ export function Countdown({ endsAt }: { endsAt: string }) {
 
   return (
     <span
-      className={`font-mono text-lg font-bold tabular-nums ${urgent ? "text-rose-400" : "text-slate-200"}`}
+      className={`font-mono text-lg font-bold tabular-nums ${urgent ? "text-destructive" : "text-foreground"}`}
     >
       {days > 0 && <span>{days}日 </span>}
       {pad(hours)}:{pad(mins)}:{pad(secs)}

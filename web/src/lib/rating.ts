@@ -1,6 +1,8 @@
 // レーティング色分け(CONTRACT.md §5)
 // 2000+ 赤 / 1800+ 橙 / 1600+ 黄 / 1400+ 青 / 1200+ 水 / 1000+ 緑 / 800+ 茶 / それ未満 灰
 // 名前・グラフ・ランキングなどすべての表示でこのユーティリティを共通使用する。
+// 色はドメインデータの可視化(4系統カラー制限の例外 — CLAUDE.md)。
+// ダーク背景で読めるよう Tailwind の -400 系を基準とし、茶のみ明度を上げた固有色を使う。
 
 export type RatingTier = {
   min: number;
@@ -16,7 +18,7 @@ export const RATING_TIERS: RatingTier[] = [
   { min: 1400, name: "青", textClass: "text-blue-400", hex: "#60a5fa" },
   { min: 1200, name: "水", textClass: "text-cyan-400", hex: "#22d3ee" },
   { min: 1000, name: "緑", textClass: "text-green-400", hex: "#4ade80" },
-  { min: 800, name: "茶", textClass: "text-amber-600", hex: "#b45309" },
+  { min: 800, name: "茶", textClass: "text-[#bf8f60]", hex: "#bf8f60" },
   { min: Number.NEGATIVE_INFINITY, name: "灰", textClass: "text-gray-400", hex: "#9ca3af" },
 ];
 

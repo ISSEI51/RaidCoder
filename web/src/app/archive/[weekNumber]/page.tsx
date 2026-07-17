@@ -1,8 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  ArrowLeft,
+  ChevronRight,
+  CircleCheck,
+  ShieldAlert,
+  Swords,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { RankBadge } from "@/components/RankBadge";
 import { UserLink } from "@/components/UserLink";
+import { BossAvatar } from "@/components/BossAvatar";
+import { characterForWeek } from "@/lib/characters";
 import { sortByRank } from "@/lib/ranks";
 import { formatDateTimeJst, formatInt } from "@/lib/format";
 
@@ -36,48 +56,60 @@ export default async function ArchiveWeekPage({
   const statsMap = new Map((statsRes.data ?? []).map((s) => [s.problem_id, s]));
   const leaderboard = leaderboardRes.data ?? [];
   const defeated = week.defeated_at !== null || week.boss_hp <= 0;
+  const character = characterForWeek(week.week_number);
 
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/archive" className="text-xs text-sky-400 hover:underline">
-          ← アーカイブに戻る
-        </Link>
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2.5 text-muted-foreground"
+        >
+          <Link href="/archive">
+            <ArrowLeft className="size-4" aria-hidden />
+            アーカイブに戻る
+          </Link>
+        </Button>
       </div>
 
-      {/* ボス結果 */}
-      <section className="rounded-2xl border border-slate-700/60 bg-slate-900/70 p-6">
-        <div className="text-xs font-bold tracking-widest text-purple-300/80">
+      {/* ボス結果(独立した情報のかたまりなのでカード) */}
+      <section className="rounded-lg border border-border bg-card p-6">
+        <div className="text-xs font-bold tracking-widest text-muted-foreground tabular-nums">
           WEEK {week.week_number} — 討伐記録
         </div>
-        <div className="mt-3 flex flex-col items-center gap-4 sm:flex-row">
-          <span className={`text-6xl ${defeated ? "opacity-50 grayscale" : ""}`}>
-            {defeated ? "☠️" : "🐉"}
-          </span>
-          <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-black text-slate-50">{week.boss_name}</h1>
+        <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          <BossAvatar character={character} size={80} defeated={defeated} />
+          <div className="min-w-0 text-center sm:text-left">
+            <h1 className="text-xl font-bold">{week.boss_name}</h1>
             {week.boss_flavor && (
-              <p className="mt-1 text-sm italic text-slate-400">「{week.boss_flavor}」</p>
+              <p className="mt-1 text-sm italic text-muted-foreground">
+                「{week.boss_flavor}」
+              </p>
             )}
             <div className="mt-2 text-sm">
               {defeated ? (
-                <span className="font-black text-yellow-300 victory-glow">
-                  🎉 撃破成功!
+                <span className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 font-bold text-primary sm:justify-start">
+                  <Trophy className="size-4" aria-hidden />
+                  撃破成功
                   {week.defeated_at && (
-                    <span className="ml-2 text-xs font-normal text-yellow-200/70">
+                    <span className="text-xs font-normal text-muted-foreground">
                       {formatDateTimeJst(week.defeated_at)}
                     </span>
                   )}
                 </span>
               ) : (
-                <span className="font-black text-rose-400">
-                  😱 討伐失敗… 残りHP {formatInt(week.boss_hp)} /{" "}
+                <span className="inline-flex items-center gap-2 font-bold text-destructive tabular-nums">
+                  <ShieldAlert className="size-4" aria-hidden />
+                  討伐失敗 — 残りHP {formatInt(week.boss_hp)} /{" "}
                   {formatInt(week.boss_max_hp)}
                 </span>
               )}
             </div>
-            <p className="mt-1 text-xs text-slate-500">
-              {formatDateTimeJst(week.starts_at)} 〜 {formatDateTimeJst(week.ends_at)}
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatDateTimeJst(week.starts_at)} 〜{" "}
+              {formatDateTimeJst(week.ends_at)}
             </p>
           </div>
         </div>
@@ -86,36 +118,51 @@ export default async function ArchiveWeekPage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 問題一覧 */}
         <section>
-          <h2 className="mb-3 text-sm font-black tracking-widest text-purple-300">
-            🗡️ 出題された問題(解説・公式解も公開中)
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <Swords className="size-5 text-muted-foreground" aria-hidden />
+            出題された問題
           </h2>
-          <div className="space-y-2">
+          <p className="mt-0.5 mb-3 text-xs text-muted-foreground">
+            解説・公式解も公開中
+          </p>
+          <div className="divide-y divide-border rounded-lg border border-border">
             {problems.map((problem) => {
               const stats = statsMap.get(problem.id);
               return (
                 <Link
                   key={problem.id}
                   href={`/problems/${problem.id}`}
-                  className="flex items-center gap-4 rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-3 transition-all hover:border-purple-500/60"
+                  className="flex items-center gap-3 px-3 py-3 transition-colors first:rounded-t-lg last:rounded-b-lg hover:bg-secondary/50"
                 >
                   <RankBadge rank={problem.rank} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-bold text-slate-100">
+                    <div className="truncate text-sm font-bold">
                       {problem.title}
                     </div>
-                    <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-slate-400">
-                      <span className="font-mono text-rose-300">
-                        💥 {formatInt(problem.base_damage)}
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <Swords className="size-3" aria-hidden />
+                        {formatInt(problem.base_damage)}
                       </span>
-                      <span>✅ AC {formatInt(stats?.ac_user_count ?? 0)}人</span>
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <CircleCheck className="size-3" aria-hidden />
+                        AC {formatInt(stats?.ac_user_count ?? 0)}人
+                      </span>
                       {stats?.first_blood_handle && (
-                        <span className="text-amber-300">
-                          ⚡ {stats.first_blood_handle}
+                        <span
+                          className="inline-flex items-center gap-1"
+                          title="最速AC"
+                        >
+                          <Zap className="size-3" aria-hidden />
+                          {stats.first_blood_handle}
                         </span>
                       )}
                     </div>
                   </div>
-                  <span className="text-slate-500">→</span>
+                  <ChevronRight
+                    className="size-4 shrink-0 text-muted-foreground"
+                    aria-hidden
+                  />
                 </Link>
               );
             })}
@@ -124,46 +171,58 @@ export default async function ArchiveWeekPage({
 
         {/* 最終ランキング */}
         <section>
-          <h2 className="mb-3 text-sm font-black tracking-widest text-purple-300">
-            🏆 最終ランキング
+          <h2 className="mb-3 flex items-center gap-2 text-lg font-bold">
+            <Trophy className="size-5 text-muted-foreground" aria-hidden />
+            最終ランキング
           </h2>
           {leaderboard.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-500">
+            <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
               参加者はいませんでした
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-700/60">
-              <table className="w-full min-w-[360px] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700/60 bg-slate-900/70 text-left text-xs text-slate-400">
-                    <th className="px-3 py-2">順位</th>
-                    <th className="px-3 py-2">ユーザー</th>
-                    <th className="px-3 py-2 text-right">ダメージ</th>
-                    <th className="px-3 py-2 text-right">AC数</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="overflow-hidden rounded-lg border border-border">
+              <Table className="min-w-[360px]">
+                <TableHeader>
+                  <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                    <TableHead className="px-3 text-xs text-muted-foreground">
+                      順位
+                    </TableHead>
+                    <TableHead className="px-3 text-xs text-muted-foreground">
+                      ユーザー
+                    </TableHead>
+                    <TableHead className="px-3 text-right text-xs text-muted-foreground">
+                      ダメージ
+                    </TableHead>
+                    <TableHead className="px-3 text-right text-xs text-muted-foreground">
+                      AC数
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {leaderboard.map((entry, i) => (
-                    <tr
-                      key={entry.user_id}
-                      className="border-b border-slate-800/60 last:border-0 hover:bg-slate-800/30"
-                    >
-                      <td className="px-3 py-2 font-mono">
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
-                      </td>
-                      <td className="px-3 py-2">
+                    <TableRow key={entry.user_id}>
+                      <TableCell
+                        className={`px-3 tabular-nums ${
+                          i < 3
+                            ? "font-bold text-foreground"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {i + 1}
+                      </TableCell>
+                      <TableCell className="px-3">
                         <UserLink handle={entry.handle} rating={entry.rating} />
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-yellow-300">
-                        💥{formatInt(entry.total_damage)}
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono text-slate-300">
+                      </TableCell>
+                      <TableCell className="px-3 text-right font-bold tabular-nums">
+                        {formatInt(entry.total_damage)}
+                      </TableCell>
+                      <TableCell className="px-3 text-right text-muted-foreground tabular-nums">
                         {formatInt(entry.solved_count)}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </section>

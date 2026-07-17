@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MessagesSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { UserLink } from "@/components/UserLink";
 import { NewThreadForm } from "@/components/board/NewThreadForm";
@@ -59,59 +60,66 @@ export default async function BoardPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-black text-slate-100">💬 冒険者の酒場(掲示板)</h1>
-        <p className="mt-1 text-xs text-slate-400">
-          アイデア相談は協力プレイの一部として歓迎!コードそのものの共有は AC 後の閲覧機能でどうぞ。
+        <h1 className="flex items-center gap-2 text-xl font-bold">
+          <MessagesSquare className="size-5 text-primary" aria-hidden />
+          掲示板
+        </h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          アイデア相談は協力プレイの一部として歓迎。コードそのものの共有は AC
+          後の閲覧機能でどうぞ。
         </p>
       </div>
 
       {user && (
-        <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4">
-          <NewThreadForm userId={user.id} weekId={activeWeekRes.data?.id ?? null} />
-        </div>
+        <NewThreadForm userId={user.id} weekId={activeWeekRes.data?.id ?? null} />
       )}
 
       {threads.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-700 px-4 py-10 text-center text-sm text-slate-500">
+        <p className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
           まだスレッドがありません。最初のスレッドを立てよう!
         </p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border border-y border-border">
           {threads.map((thread) => {
             const author = profileMap.get(thread.author_id);
             const problem = thread.problem_id
               ? problemMap.get(thread.problem_id)
               : null;
             return (
-              <li key={thread.id}>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-3 transition-colors hover:border-purple-500/60">
+              <li
+                key={thread.id}
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 py-3"
+              >
+                <Link
+                  href={`/board/${thread.id}`}
+                  className="min-w-0 flex-1 truncate text-sm font-bold transition-colors hover:text-primary"
+                >
+                  {thread.title}
+                </Link>
+                {problem && (
                   <Link
-                    href={`/board/${thread.id}`}
-                    className="min-w-0 flex-1 truncate font-bold text-slate-100 hover:text-purple-300"
+                    href={`/problems/${problem.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    🧵 {thread.title}
+                    <RankBadge rank={problem.rank} size="sm" />
+                    <span className="max-w-[10rem] truncate">{problem.title}</span>
                   </Link>
-                  {problem && (
-                    <Link
-                      href={`/problems/${problem.id}`}
-                      className="inline-flex items-center gap-1 rounded-md border border-slate-600/60 bg-slate-800/60 px-2 py-0.5 text-xs text-slate-300 hover:border-purple-500/60"
-                    >
-                      <RankBadge rank={problem.rank} size="sm" />
-                      <span className="max-w-[10rem] truncate">{problem.title}</span>
-                    </Link>
-                  )}
-                  <span className="text-xs text-slate-500">
-                    💬 {postCount.get(thread.id) ?? 0}
+                )}
+                <span
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums"
+                  title="投稿数"
+                >
+                  <MessagesSquare className="size-3" aria-hidden />
+                  {postCount.get(thread.id) ?? 0}
+                </span>
+                {author && (
+                  <span className="text-xs">
+                    <UserLink handle={author.handle} rating={author.rating} />
                   </span>
-                  {author && (
-                    <span className="text-xs">
-                      <UserLink handle={author.handle} rating={author.rating} />
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-600">
-                    {formatDateTimeJst(thread.created_at)}
-                  </span>
-                </div>
+                )}
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {formatDateTimeJst(thread.created_at)}
+                </span>
               </li>
             );
           })}

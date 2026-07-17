@@ -7,10 +7,11 @@ type ChartEvent = {
 };
 
 // レート推移の折れ線グラフ(SVG手描き。背景に色帯 = CONTRACT §5 のしきい値)
+// 色帯・点のレート色はドメインデータの可視化として維持し、線・軸はトークン色を使う。
 export function RatingChart({ events }: { events: ChartEvent[] }) {
   if (events.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-slate-500">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         まだレート変動がありません。レイドに参加してダメージを与えよう!
       </p>
     );
@@ -88,7 +89,7 @@ export function RatingChart({ events }: { events: ChartEvent[] }) {
               x2={W - PAD_R}
               y1={y(v)}
               y2={y(v)}
-              stroke="#334155"
+              stroke="var(--border)"
               strokeWidth={v % 400 === 0 ? 1 : 0.5}
               strokeDasharray="4 4"
             />
@@ -97,7 +98,7 @@ export function RatingChart({ events }: { events: ChartEvent[] }) {
               y={y(v) + 4}
               textAnchor="end"
               fontSize={10}
-              fill="#64748b"
+              fill="var(--muted-foreground)"
             >
               {v}
             </text>
@@ -108,7 +109,7 @@ export function RatingChart({ events }: { events: ChartEvent[] }) {
         <polyline
           points={polyline}
           fill="none"
-          stroke="#e2e8f0"
+          stroke="var(--foreground)"
           strokeWidth={2}
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -122,7 +123,7 @@ export function RatingChart({ events }: { events: ChartEvent[] }) {
               cy={y(p.rating)}
               r={4.5}
               fill={ratingHex(p.rating)}
-              stroke="#0f172a"
+              stroke="var(--background)"
               strokeWidth={1.5}
             />
             <text
@@ -130,7 +131,7 @@ export function RatingChart({ events }: { events: ChartEvent[] }) {
               y={H - 10}
               textAnchor="middle"
               fontSize={10}
-              fill="#64748b"
+              fill="var(--muted-foreground)"
             >
               {p.label}
             </text>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Markdown } from "@/components/Markdown";
 import { UserLink } from "@/components/UserLink";
@@ -54,19 +55,23 @@ export default async function ThreadPage({
   return (
     <div className="space-y-5">
       <div>
-        <Link href="/board" className="text-xs text-sky-400 hover:underline">
-          ← 掲示板に戻る
+        <Link
+          href="/board"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3" aria-hidden />
+          掲示板に戻る
         </Link>
-        <h1 className="mt-2 text-xl font-black text-slate-100">🧵 {thread.title}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+        <h1 className="mt-2 text-xl font-bold">{thread.title}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {threadAuthor && (
             <UserLink handle={threadAuthor.handle} rating={threadAuthor.rating} />
           )}
-          <span>{formatDateTimeJst(thread.created_at)}</span>
+          <span className="tabular-nums">{formatDateTimeJst(thread.created_at)}</span>
           {problem && (
             <Link
               href={`/problems/${problem.id}`}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-600/60 bg-slate-800/60 px-2 py-0.5 text-slate-300 hover:border-purple-500/60"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-1.5 py-0.5 transition-colors hover:text-foreground"
             >
               <RankBadge rank={problem.rank} size="sm" />
               <span>{problem.title}</span>
@@ -76,25 +81,24 @@ export default async function ThreadPage({
       </div>
 
       {posts.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-700 px-4 py-8 text-center text-sm text-slate-500">
+        <p className="rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
           まだ投稿がありません。最初の一言をどうぞ!
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-border border-y border-border">
           {posts.map((post) => {
             const author = profileMap.get(post.author_id);
             return (
-              <li
-                key={post.id}
-                className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4"
-              >
-                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+              <li key={post.id} className="py-4">
+                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   {author ? (
                     <UserLink handle={author.handle} rating={author.rating} />
                   ) : (
                     <span>???</span>
                   )}
-                  <span>{formatDateTimeJst(post.created_at)}</span>
+                  <span className="tabular-nums">
+                    {formatDateTimeJst(post.created_at)}
+                  </span>
                   {post.author_id === user.id && (
                     <span className="ml-auto">
                       <DeletePostButton postId={post.id} />
@@ -108,12 +112,10 @@ export default async function ThreadPage({
         </ul>
       )}
 
-      <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4">
-        <h2 className="mb-2 text-sm font-black tracking-widest text-purple-300">
-          ✍️ 投稿する
-        </h2>
+      <section>
+        <h2 className="mb-2 text-lg font-bold">投稿する</h2>
         <NewPostForm threadId={thread.id} userId={user.id} />
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
-// ログアウトボタン
+// ログアウトボタン(モバイルではアイコンのみ表示)
 export function LogoutButton() {
   const handleLogout = async () => {
     const supabase = createClient();
@@ -11,12 +13,15 @@ export function LogoutButton() {
   };
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       onClick={handleLogout}
-      className="rounded-lg border border-slate-600/60 px-3 py-1.5 text-xs font-bold text-slate-400 transition-colors hover:border-rose-500/60 hover:text-rose-300"
+      className="text-muted-foreground hover:text-foreground"
     >
-      ログアウト
-    </button>
+      <LogOut aria-hidden />
+      <span className="hidden sm:inline">ログアウト</span>
+    </Button>
   );
 }
