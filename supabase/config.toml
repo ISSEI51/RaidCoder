@@ -1,0 +1,57 @@
+# =============================================================================
+# Supabase ローカル開発設定(npx supabase start が読む)
+# =============================================================================
+# `npx supabase init` 相当の最小構成 + RaidCoder 向けの追加設定(GitHub OAuth / seed)。
+# 本番(supabase.com)には影響しない。本番の Auth 設定は Dashboard から行う(DEPLOY.md 参照)。
+
+project_id = "raidcoder"
+
+[api]
+enabled = true
+# ローカル API の URL は http://127.0.0.1:54321 になる
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.seed]
+# `npx supabase start` / `npx supabase db reset` 時に seed を自動適用
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[studio]
+enabled = true
+# ローカル管理画面: http://127.0.0.1:54323
+port = 54323
+
+[realtime]
+# ボスHP・提出結果のライブ配信に使用
+enabled = true
+
+[auth]
+enabled = true
+# web(Next.js dev サーバー)の URL
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+
+# --- GitHub OAuth(ローカル用)------------------------------------------------
+# client_id / secret は環境変数から読む(値の直書き禁止。env() は
+# シェルの環境変数、またはリポジトリ直下の .env ファイルを参照する)。
+#   1. GitHub で OAuth App を作成(callback: http://localhost:54321/auth/v1/callback)
+#   2. `npx supabase start` の前に以下を export するか、リポジトリ直下の .env に記載:
+#        SUPABASE_AUTH_GITHUB_CLIENT_ID=<Client ID>
+#        SUPABASE_AUTH_GITHUB_SECRET=<Client Secret>
+# 詳細は infra/LOCAL_DEV.md §2。
+[auth.external.github]
+enabled = true
+client_id = "env(SUPABASE_AUTH_GITHUB_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GITHUB_SECRET)"
+# ローカル Supabase の callback URL(GitHub OAuth App 側にもこれを登録する)
+redirect_uri = "http://localhost:54321/auth/v1/callback"

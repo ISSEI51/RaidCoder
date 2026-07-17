@@ -1,0 +1,27 @@
+{
+  "name": "raidcoder-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RaidCoder AI問題生成・週ローテーション CLI (Lightsail cron から週1実行)",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
+    "@supabase/supabase-js": "^2.110.7",
+    "luxon": "^3.7.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.2",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

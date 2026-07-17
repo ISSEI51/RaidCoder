@@ -1,0 +1,118 @@
+# =============================================================================
+# RaidCoder — Lightsail 用スタック
+# =============================================================================
+# Judge0 CE v1.13.1 の公式 docker-compose.yml をベースに、RaidCoder の
+# judge-bridge / generator を追加した構成。
+#
+# 使い方(詳細は DEPLOY.md):
+#   cp .env.example .env && vim .env      # 秘密情報を設定
+#   docker compose up -d --build          # 常駐サービス一式を起動
+#   docker compose run --rm generator rotate   # 週ローテーション(cron から週1回)
+#
+# 注意:
+#   - Judge0(server)はホストにポートを公開しない。judge-bridge / generator が
+#     compose 内部ネットワーク経由で http://server:2358 を利用する。
+#   - Judge0 v1.13 はホストが cgroup v1 であることが必須(DEPLOY.md §3-3 参照)。
+#   - AUTHN_TOKEN は judge0.conf ではなく .env(JUDGE0_AUTH_TOKEN)から注入する。
+
+x-logging: &default-logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 100m
+
+services:
+  # ---------------------------------------------------------------------------
+  # Judge0 CE(コード実行サンドボックス)— 公式構成ベース
+  # ---------------------------------------------------------------------------
+  server:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    # ホストへは公開しない(内部ネットワークのみ)
+    expose:
+      - "2358"
+    privileged: true
+    environment:
+      # API 認証トークン。judge0.conf 側の AUTHN_TOKEN はコメントアウトしてあるため
+      # ここで注入した値がそのまま有効になる(空だと認証無効になるので必須にしている)
+      AUTHN_TOKEN: ${JUDGE0_AUTH_TOKEN:?JUDGE0_AUTH_TOKEN を infra/.env に設定してください}
+    depends_on:
+      - judge0-db
+      - judge0-redis
+    <<: *default-logging
+    restart: unless-stopped
+
+  workers:
+    image: judge0/judge0:1.13.1
+    command: ["./scripts/workers"]
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    depends_on:
+      - judge0-db
+      - judge0-redis
+    <<: *default-logging
+    restart: unless-stopped
+
+  judge0-db:
+    image: postgres:16-alpine
+    # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD を judge0.conf から読む(公式と同じ方式)
+    env_file: judge0.conf
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data/
+    <<: *default-logging
+    restart: unless-stopped
+
+  judge0-redis:
+    image: redis:7-alpine
+    # alpine には bash がないため sh で起動(REDIS_PASSWORD は judge0.conf から)
+    command: ["sh", "-c", 'docker-entrypoint.sh --appendonly no --requirepass "$$REDIS_PASSWORD"']
+    env_file: judge0.conf
+    <<: *default-logging
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # RaidCoder — 提出ジャッジワーカー(常駐)
+  # ---------------------------------------------------------------------------
+  judge-bridge:
+    build: ../judge-bridge
+    environment:
+      # 環境変数名は docs/CONTRACT.md §9 が正
+      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL を infra/.env に設定してください}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY を infra/.env に設定してください}
+      JUDGE0_URL: http://server:2358
+      JUDGE0_AUTH_TOKEN: ${JUDGE0_AUTH_TOKEN}
+      POLL_INTERVAL_MS: ${POLL_INTERVAL_MS:-2000}
+      EXECUTOR: judge0
+    depends_on:
+      - server
+    # SIGTERM 後、処理中のジャッジ(1件あたり最大約90秒)を完了させてから停止できるよう
+    # 猶予を長めに取る(judge-bridge 側の SHUTDOWN_GRACE_MS=110000 と整合)。
+    # Docker 既定の 10 秒だと再デプロイのたびに処理中の提出が running のまま孤児化する。
+    stop_grace_period: 120s
+    <<: *default-logging
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # RaidCoder — AI 問題生成 CLI(常駐しない。cron / 手動で run する)
+  #   例: docker compose run --rm generator rotate
+  # ---------------------------------------------------------------------------
+  generator:
+    build: ../generator
+    profiles: ["tools"]
+    environment:
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JUDGE0_URL: http://server:2358
+      JUDGE0_AUTH_TOKEN: ${JUDGE0_AUTH_TOKEN}
+      AI_PROVIDER: ${AI_PROVIDER:-anthropic-api}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-claude-sonnet-5}
+    depends_on:
+      - server
+    <<: *default-logging
+    restart: "no"
+
+volumes:
+  judge0-db-data:
