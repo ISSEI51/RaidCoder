@@ -39,14 +39,14 @@ export function HeaderNav() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors",
+              "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors",
               active
                 ? "bg-secondary text-foreground"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             <Icon className="size-4" aria-hidden />
-            <span className="hidden sm:inline">{label}</span>
+            <span className="hidden md:inline">{label}</span>
           </Link>
         );
       })}

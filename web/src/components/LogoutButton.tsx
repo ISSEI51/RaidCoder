@@ -21,7 +21,7 @@ export function LogoutButton() {
       className="text-muted-foreground hover:text-foreground"
     >
       <LogOut aria-hidden />
-      <span className="hidden sm:inline">ログアウト</span>
+      <span className="hidden md:inline">ログアウト</span>
     </Button>
   );
 }
