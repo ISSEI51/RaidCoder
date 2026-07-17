@@ -41,7 +41,7 @@ export async function Header() {
           <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2">
             <Link
               href={`/users/${encodeURIComponent(profile.handle)}`}
-              className="flex min-w-0 items-center gap-2"
+              className="flex min-w-0 shrink-0 items-center gap-2"
             >
               {profile.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -56,7 +56,7 @@ export async function Header() {
                 </span>
               )}
               <span
-                className={`hidden truncate text-sm font-bold sm:inline ${ratingTextClass(profile.rating)}`}
+                className={`hidden truncate text-sm font-bold lg:inline ${ratingTextClass(profile.rating)}`}
               >
                 {profile.handle}
               </span>

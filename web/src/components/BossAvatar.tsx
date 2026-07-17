@@ -59,7 +59,8 @@ export function BossAvatar({
           alt=""
           width={size}
           height={size}
-          className="h-full w-full object-cover"
+          // 全身スプライトを円内に収める(cover だと横長・縦長の個体が切れる)
+          className="h-full w-full object-contain p-[6%]"
           onError={() => setImageMissing(true)}
         />
       )}

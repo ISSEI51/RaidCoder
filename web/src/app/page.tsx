@@ -66,12 +66,13 @@ export default async function DashboardPage() {
   const activity = activityRes.data ?? [];
 
   return (
-    <div className="space-y-5">
-      <BossPanel week={week} />
+    // 左: ボス+クエスト / 右: ランキング+攻撃ログの縦長レール
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="space-y-5 md:col-span-2">
+        <BossPanel week={week} />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* 問題一覧 */}
-        <section className="lg:col-span-2">
+        <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-bold">
               <Swords className="size-5 text-muted-foreground" aria-hidden />
@@ -133,9 +134,10 @@ export default async function DashboardPage() {
             </div>
           )}
         </section>
+      </div>
 
-        {/* サイドバー: ランキング + ACフィード */}
-        <div className="space-y-5">
+      {/* 右レール: ランキング + ACフィード(縦長) */}
+      <div className="flex flex-col gap-5">
           <Card size="sm" className="gap-3 rounded-lg">
             <CardHeader>
               <h2 className="flex items-center gap-2 text-sm font-bold">
@@ -185,7 +187,8 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card size="sm" className="gap-3 rounded-lg">
+          {/* flex-1 で右レールの残り全高を使う(縦長表示) */}
+          <Card size="sm" className="flex-1 gap-3 rounded-lg">
             <CardHeader>
               <h2 className="flex items-center gap-2 text-sm font-bold">
                 <Activity className="size-4 text-muted-foreground" aria-hidden />
@@ -230,7 +233,6 @@ export default async function DashboardPage() {
               )}
             </CardContent>
           </Card>
-        </div>
       </div>
     </div>
   );
