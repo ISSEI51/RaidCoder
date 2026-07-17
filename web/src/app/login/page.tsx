@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { MessagesSquare, Swords, Trophy, Zap, type LucideIcon } from "lucide-react";
 import { LoginButton } from "@/components/LoginButton";
-import { BossAvatar } from "@/components/BossAvatar";
-import { CHARACTERS } from "@/lib/characters";
 
 export const metadata: Metadata = {
   title: "ログイン",
@@ -24,7 +22,25 @@ export default async function LoginPage({
   const { error } = await searchParams;
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-center py-10 sm:py-16">
+    // mx/px の calc は main の余白を打ち消して画面幅いっぱいに広げるため(装飾を画面端で切る)
+    <div className="relative mx-[calc(50%-50vw)] overflow-hidden px-[calc(50vw-50%)]">
+      {/* ボスの気配を見せる背景装飾。左右の端から半身だけ覗かせ、本文の可読性を優先し低不透明度で敷く */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/characters/architect.png"
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 left-0 hidden w-[36rem] -translate-x-1/2 -translate-y-1/2 opacity-15 select-none md:block lg:w-[51rem]"
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/characters/commander.png"
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute top-1/2 right-0 hidden w-[36rem] translate-x-1/2 -translate-y-1/2 opacity-15 select-none md:block lg:w-[51rem]"
+      />
+
+      <div className="relative mx-auto flex max-w-lg flex-col items-center py-10 sm:py-16">
       <p className="text-xs font-bold tracking-[0.3em] text-muted-foreground uppercase">
         Weekly Raid × Competitive Programming
       </p>
@@ -32,19 +48,13 @@ export default async function LoginPage({
         Raid<span className="text-primary">Coder</span>
       </h1>
       <p className="mt-4 max-w-md text-center text-sm leading-relaxed text-muted-foreground sm:text-base">
-        AI が毎週生成するレイドボスを、
-        <span className="font-semibold text-foreground">みんなの AC</span>
-        で討伐する非同期協力型・競技プログラミングゲーム。
+        <span className="block">
+          AI が毎週生成するレイドボスを、
+          <span className="font-semibold text-foreground">みんなの AC</span>
+          で討伐する
+        </span>
+        <span className="block">非同期協力型・競技プログラミングゲーム</span>
       </p>
-
-      <div
-        className="mt-8 flex flex-wrap items-center justify-center gap-2"
-        aria-label="ボスキャラクターのロースター"
-      >
-        {CHARACTERS.map((character) => (
-          <BossAvatar key={character.slug} character={character} size={40} />
-        ))}
-      </div>
 
       <div className="mt-10 w-full divide-y divide-border border-y border-border text-left">
         {FEATURES.map(({ icon: Icon, text }, i) => (
@@ -67,6 +77,7 @@ export default async function LoginPage({
       <p className="mt-4 text-xs text-muted-foreground">
         参戦には GitHub アカウントが必要です
       </p>
+      </div>
     </div>
   );
 }
