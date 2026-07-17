@@ -10,3 +10,7 @@ build/
 .vercel
 .turbo
 coverage/
+
+# Supabase CLI のローカル状態
+supabase/.branches/
+supabase/.temp/
