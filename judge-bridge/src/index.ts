@@ -56,9 +56,14 @@ async function processSubmission(sub: SubmissionRow): Promise<void> {
       throw new Error(`テストケースが0件です (problem_id=${sub.problem_id})`);
     }
 
+    // LeetCode 形式: 提出コード(関数実装)の末尾にジャッジ用ハーネスを連結して実行する。
+    // ハーネスが無い問題(旧 AtCoder 形式)は提出コードをそのまま実行する。
+    const harness = limits.judge_harnesses?.[sub.language];
+    const code = harness ? `${sub.code}\n${harness}` : sub.code;
+
     const results = await executor.run({
       language: sub.language,
-      code: sub.code,
+      code,
       cases: cases.map((c) => ({ input: c.input, expectedOutput: c.expected_output })),
       timeLimitMs: limits.time_limit_ms,
       memoryLimitKb: limits.memory_limit_kb,

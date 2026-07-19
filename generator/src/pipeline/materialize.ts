@@ -41,17 +41,21 @@ export function sampleOnlyTestCases(problem: GeneratedProblem): TestCaseData[] {
 /**
  * Judge0 で公式解を検証し、サンプル+隠しケース10件を実体化する。
  * 検証に失敗した場合は Error を投げる(呼び出し側で問題ごと再生成)。
+ *
+ * solutionProgramPy は「official_solution_py(class Solution)+ Python ハーネス」を
+ * 連結した実行可能プログラム(呼び出し側 problem.ts が組み立てる)。
  */
 export async function materializeTestCases(
   judge0: Judge0Client,
   problem: GeneratedProblem,
+  solutionProgramPy: string,
 ): Promise<TestCaseData[]> {
   const cases: TestCaseData[] = [];
 
-  // 1. サンプル検証: official_solution_py を各 sample.input で実行して一致確認
+  // 1. サンプル検証: 公式解プログラムを各 sample.input で実行して一致確認
   for (const [i, sample] of problem.samples.entries()) {
     const res = await judge0.runPython(
-      problem.official_solution_py,
+      solutionProgramPy,
       sample.input,
       problem.time_limit_ms,
       DEFAULT_MEMORY_LIMIT_KB,
@@ -95,7 +99,7 @@ export async function materializeTestCases(
     }
 
     const sol = await judge0.runPython(
-      problem.official_solution_py,
+      solutionProgramPy,
       gen.stdout,
       problem.time_limit_ms,
       DEFAULT_MEMORY_LIMIT_KB,

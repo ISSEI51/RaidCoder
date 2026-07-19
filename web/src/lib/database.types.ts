@@ -108,6 +108,9 @@ export interface Database {
           memory_limit_kb: number;
           base_damage: number;
           created_at: string;
+          signature: Json | null;
+          code_templates: Record<string, string> | null;
+          judge_harnesses: Record<string, string> | null;
         };
         Insert: {
           id?: string;
@@ -119,6 +122,9 @@ export interface Database {
           memory_limit_kb?: number;
           base_damage: number;
           created_at?: string;
+          signature?: Json | null;
+          code_templates?: Record<string, string> | null;
+          judge_harnesses?: Record<string, string> | null;
         };
         Update: {
           id?: string;
@@ -130,6 +136,9 @@ export interface Database {
           memory_limit_kb?: number;
           base_damage?: number;
           created_at?: string;
+          signature?: Json | null;
+          code_templates?: Record<string, string> | null;
+          judge_harnesses?: Record<string, string> | null;
         };
         Relationships: [];
       };

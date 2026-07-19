@@ -11,7 +11,13 @@
 | `typescript` | TypeScript 3.7 | 74 |
 | `java` | Java (OpenJDK 13) | 62 |
 
-- 提出は stdin から入力を読み stdout へ出力する形式(AtCoder と同じ)
+- 問題は LeetCode 形式(ユーザーは関数1つを実装する。入出力コードは書かない)
+  - `problems.signature` に関数シグネチャ(JSON)、`problems.code_templates` に言語別の関数スタブ、
+    `problems.judge_harnesses` に言語別ハーネスを保存する(generator が生成)
+  - ジャッジ時は「提出コード + `\n` + ハーネス」を連結して実行する。
+    ハーネスがワイヤ形式(generator/src/signature.ts の仕様)の stdin をパースして関数を呼び、
+    戻り値を stdout へ書き出す
+  - これらの列が null の問題(旧 AtCoder 形式)は、提出コードを単体で stdin/stdout 実行する
 - 判定: stdout を末尾空白・末尾改行をトリムして期待出力と厳密比較
 - Judge0 へは base64 エンコード(`base64_encoded=true`)で送ること(マルチバイト対策)
 - `cpu_time_limit` = `problems.time_limit_ms / 1000`(秒)、`memory_limit` = `problems.memory_limit_kb`

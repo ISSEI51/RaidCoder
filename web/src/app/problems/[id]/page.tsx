@@ -188,7 +188,9 @@ export default async function ProblemPage({
         <section className="min-w-0 space-y-6">
           <Markdown>{problem.statement_md}</Markdown>
 
-          {samples.length > 0 && (
+          {/* LeetCode 形式(signature あり)の問題は問題文中の例で十分なため、
+              ジャッジ内部のワイヤ形式サンプルは表示しない */}
+          {problem.signature === null && samples.length > 0 && (
             <div className="space-y-3">
               <h2 className="text-lg font-bold">サンプルケース</h2>
               {samples.map((sample, i) => (
@@ -232,6 +234,7 @@ export default async function ProblemPage({
             problemId={problem.id}
             userId={user.id}
             weekStatus={week.status === "ended" ? "ended" : "active"}
+            templates={problem.code_templates}
           />
         </section>
       </div>

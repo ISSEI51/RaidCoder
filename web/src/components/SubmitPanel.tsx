@@ -44,14 +44,18 @@ export function SubmitPanel({
   problemId,
   userId,
   weekStatus,
+  templates,
 }: {
   problemId: string;
   userId: string;
   weekStatus: "active" | "ended";
+  /** LeetCode 形式問題の言語別関数スタブ(旧形式の問題は null → 共通テンプレート) */
+  templates?: Record<string, string> | null;
 }) {
   const [language, setLanguage] = useState<SubmissionLanguage>("python");
   const [codes, setCodes] = useState<Record<SubmissionLanguage, string>>({
     ...CODE_TEMPLATES,
+    ...(templates ?? {}),
   });
   const [submitting, setSubmitting] = useState(false);
   const [current, setCurrent] = useState<Submission | null>(null);

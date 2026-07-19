@@ -151,6 +151,9 @@ async function ensureUpcomingWeek(
       testCases: b.testCases,
       editorialMd: b.generated.editorial_md,
       officialSolutions: [{ language: 'python', code: b.generated.official_solution_py }],
+      signature: b.generated.signature,
+      codeTemplates: b.codegen.templates,
+      judgeHarnesses: b.codegen.harnesses,
     })),
   };
 

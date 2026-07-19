@@ -24,6 +24,11 @@ export interface SubmissionRow {
 export interface ProblemLimits {
   time_limit_ms: number;
   memory_limit_kb: number;
+  /**
+   * LeetCode 形式の問題では言語 → ジャッジ用ハーネス。
+   * null の場合は旧形式(stdin/stdout)で、提出コードを単体で実行する。
+   */
+  judge_harnesses: Record<string, string> | null;
 }
 
 /** test_cases 行(service role なので非サンプルも取得できる) */

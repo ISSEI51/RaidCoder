@@ -26,14 +26,14 @@ export async function claimPendingSubmissions(
   return (data ?? []) as SubmissionRow[];
 }
 
-/** problems から実行制限(time_limit_ms / memory_limit_kb)を取得する */
+/** problems から実行制限(time_limit_ms / memory_limit_kb)とジャッジ用ハーネスを取得する */
 export async function fetchProblemLimits(
   client: SupabaseClient,
   problemId: string,
 ): Promise<ProblemLimits> {
   const { data, error } = await client
     .from('problems')
-    .select('time_limit_ms, memory_limit_kb')
+    .select('time_limit_ms, memory_limit_kb, judge_harnesses')
     .eq('id', problemId)
     .single();
   if (error) {

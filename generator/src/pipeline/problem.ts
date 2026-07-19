@@ -1,4 +1,5 @@
 // コール2: 問題ごとの生成 + Judge0 検証(失敗した問題のみ最大3リトライ)
+import { generateCode, type CodegenResult } from '../codegen.js';
 import { MAX_PROBLEM_ATTEMPTS } from '../constants.js';
 import type { TestCaseData } from '../db.js';
 import type { Judge0Client } from '../judge0.js';
@@ -13,6 +14,8 @@ export interface BuiltProblem {
   outline: ThemeProblem;
   generated: GeneratedProblem;
   testCases: TestCaseData[];
+  /** シグネチャから決定的に生成した各言語のテンプレート+ハーネス */
+  codegen: CodegenResult;
 }
 
 /**
@@ -38,13 +41,18 @@ export async function buildProblem(
       );
       const generated = problemSchema.parse(extractJson(raw));
 
+      // シグネチャから4言語分のテンプレート+ハーネスを決定的に生成し、
+      // 公式解(class Solution)+ Python ハーネスの連結プログラムで検証する
+      const codegen = generateCode(generated.signature);
+      const solutionProgramPy = generated.official_solution_py + codegen.harnesses.python;
+
       const testCases =
         judge0 === null
           ? sampleOnlyTestCases(generated)
-          : await materializeTestCases(judge0, generated);
+          : await materializeTestCases(judge0, generated, solutionProgramPy);
 
       log(`ランク ${outline.rank}: 生成完了 (テストケース ${testCases.length} 件)`);
-      return { outline, generated, testCases };
+      return { outline, generated, testCases, codegen };
     } catch (err) {
       lastError = err;
       warn(`ランク ${outline.rank} の生成に失敗 (試行 ${attempt}/${MAX_PROBLEM_ATTEMPTS}): ${errMessage(err)}`);

@@ -16,14 +16,19 @@ const validTheme = () => ({
 });
 
 const validProblem = () => ({
-  statement_md: '## 問題文\n$N$ 個の整数の和を求めよ。',
+  statement_md: '整数配列 `nums` の総和を返せ。\n\n## 例\n```\n入力: nums = [1,2,3]\n出力: 6\n```\n\n## 制約\n- `1 <= nums.length <= 10^5`',
+  signature: {
+    function_name: 'sumArray',
+    params: [{ name: 'nums', type: 'int[]' }],
+    returns: 'int',
+  },
   time_limit_ms: 2000,
   samples: [
     { input: '3\n1 2 3\n', output: '6\n' },
     { input: '1\n5\n', output: '5\n' },
   ],
   case_generator_py: 'import random, sys\nseed = int(input())\nrandom.seed(seed)\nprint(1)\nprint(seed)\n',
-  official_solution_py: 'n = int(input())\nprint(sum(map(int, input().split())))\n',
+  official_solution_py: 'class Solution:\n    def sumArray(self, nums):\n        return sum(nums)\n',
   editorial_md: '## 解説\n合計を取るだけです。',
 });
 
@@ -104,6 +109,29 @@ describe('problemSchema', () => {
   it('サンプルの output が空文字列だと拒否する', () => {
     const problem = validProblem();
     problem.samples[0] = { input: '1\n', output: '' };
+    expect(() => problemSchema.parse(problem)).toThrow();
+  });
+
+  it('signature 欠落を拒否する', () => {
+    const { signature: _omit, ...problem } = validProblem();
+    expect(() => problemSchema.parse(problem)).toThrow();
+  });
+
+  it('signature の不正な型を拒否する', () => {
+    const problem = validProblem();
+    problem.signature.params[0]!.type = 'float';
+    expect(() => problemSchema.parse(problem)).toThrow();
+  });
+
+  it('signature の関数名が snake_case だと拒否する', () => {
+    const problem = validProblem();
+    problem.signature.function_name = 'sum_array';
+    expect(() => problemSchema.parse(problem)).toThrow();
+  });
+
+  it('signature の引数0個を拒否する', () => {
+    const problem = validProblem();
+    problem.signature.params = [];
     expect(() => problemSchema.parse(problem)).toThrow();
   });
 });

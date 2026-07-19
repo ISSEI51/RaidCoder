@@ -28,6 +28,12 @@ export interface ProblemPayload {
   testCases: TestCaseData[];
   editorialMd: string;
   officialSolutions: Array<{ language: string; code: string }>;
+  /** LeetCode 形式: 関数シグネチャ(JSON) */
+  signature: unknown;
+  /** 言語 → エディタ用テンプレート */
+  codeTemplates: Record<string, string>;
+  /** 言語 → ジャッジ用ハーネス(提出コードの末尾に連結) */
+  judgeHarnesses: Record<string, string>;
 }
 
 export interface WeekPayload {
@@ -206,6 +212,9 @@ export class Db {
             statement_md: p.statementMd,
             time_limit_ms: p.timeLimitMs,
             base_damage: p.baseDamage,
+            signature: p.signature,
+            code_templates: p.codeTemplates,
+            judge_harnesses: p.judgeHarnesses,
           })),
         )
         .select('id, rank');
