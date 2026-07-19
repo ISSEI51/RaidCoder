@@ -1,6 +1,7 @@
 // AI 出力の構造検証 (zod)
 import { z } from 'zod';
 import { RANKS } from './constants.js';
+import { signatureSchema } from './signature.js';
 
 export const rankSchema = z.enum(RANKS);
 
@@ -32,6 +33,7 @@ export const sampleSchema = z.object({
 /** コール2(問題ごと)の出力 */
 export const problemSchema = z.object({
   statement_md: z.string().min(1),
+  signature: signatureSchema,
   time_limit_ms: z.coerce.number().int().min(500).max(10000),
   samples: z.array(sampleSchema).min(2),
   case_generator_py: z.string().min(1),
