@@ -17,7 +17,7 @@ import { RankBadge } from "@/components/RankBadge";
 import { UserLink } from "@/components/UserLink";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader } from "@/components/ui/card";
-import { sortByRank } from "@/lib/ranks";
+import { sortByRank, RANK_ORDER } from "@/lib/ranks";
 import { formatInt, timeAgo } from "@/lib/format";
 
 // レイドダッシュボード
@@ -59,6 +59,12 @@ export default async function DashboardPage() {
     ]);
 
   const problems = sortByRank(problemsRes.data ?? []);
+  // クエスト一覧はスクロールせず全問見渡せるよう、上位(S/A/B)・下位(C/D/E)の2列に分ける
+  const upperRanks = RANK_ORDER.slice(0, 3);
+  const problemColumns = [
+    problems.filter((p) => upperRanks.includes(p.rank)),
+    problems.filter((p) => !upperRanks.includes(p.rank)),
+  ].filter((col) => col.length > 0);
   const statsMap = new Map(
     (statsRes.data ?? []).map((s) => [s.problem_id, s]),
   );
@@ -89,48 +95,55 @@ export default async function DashboardPage() {
               問題を準備中です…
             </p>
           ) : (
-            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-              {problems.map((problem) => {
-                const stats = statsMap.get(problem.id);
-                return (
-                  <Link
-                    key={problem.id}
-                    href={`/problems/${problem.id}`}
-                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50"
-                  >
-                    <RankBadge rank={problem.rank} />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold">
-                        {problem.title}
-                      </div>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                        <span className="inline-flex items-center gap-1 font-mono tabular-nums">
-                          <Sword className="size-3" aria-hidden />
-                          基礎 {formatInt(problem.base_damage)}
-                        </span>
-                        <span className="inline-flex items-center gap-1 tabular-nums">
-                          <CircleCheck className="size-3" aria-hidden />
-                          AC {formatInt(stats?.ac_user_count ?? 0)}人
-                        </span>
-                        <span className="inline-flex items-center gap-1 tabular-nums">
-                          <Target className="size-3" aria-hidden />
-                          挑戦 {formatInt(stats?.attempt_user_count ?? 0)}人
-                        </span>
-                        {stats?.first_blood_handle && (
-                          <span className="inline-flex items-center gap-1 text-primary">
-                            <Zap className="size-3" aria-hidden />
-                            先制 {stats.first_blood_handle}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight
-                      className="size-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                  </Link>
-                );
-              })}
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {problemColumns.map((column) => (
+                <div
+                  key={column[0].rank}
+                  className="divide-y divide-border self-start overflow-hidden rounded-lg border border-border"
+                >
+                  {column.map((problem) => {
+                    const stats = statsMap.get(problem.id);
+                    return (
+                      <Link
+                        key={problem.id}
+                        href={`/problems/${problem.id}`}
+                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50"
+                      >
+                        <RankBadge rank={problem.rank} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-bold">
+                            {problem.title}
+                          </div>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1 font-mono tabular-nums">
+                              <Sword className="size-3" aria-hidden />
+                              基礎 {formatInt(problem.base_damage)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <CircleCheck className="size-3" aria-hidden />
+                              AC {formatInt(stats?.ac_user_count ?? 0)}人
+                            </span>
+                            <span className="inline-flex items-center gap-1 tabular-nums">
+                              <Target className="size-3" aria-hidden />
+                              挑戦 {formatInt(stats?.attempt_user_count ?? 0)}人
+                            </span>
+                            {stats?.first_blood_handle && (
+                              <span className="inline-flex items-center gap-1 text-primary">
+                                <Zap className="size-3" aria-hidden />
+                                先制 {stats.first_blood_handle}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight
+                          className="size-4 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           )}
         </section>
