@@ -29,11 +29,11 @@ export default function RootLayout({
     <html lang="ja" className={cn("dark font-sans", inter.variable)}>
       <body className="flex min-h-svh flex-col antialiased">
         <Header />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+        <main className="mx-auto w-full max-w-[96rem] flex-1 px-4 py-6 sm:px-6">
           {children}
         </main>
         <footer className="border-t border-border">
-          <div className="mx-auto max-w-6xl px-4 py-5 text-center text-xs text-muted-foreground sm:px-6">
+          <div className="mx-auto max-w-[96rem] px-4 py-5 text-center text-xs text-muted-foreground sm:px-6">
             RaidCoder — 毎週月曜 00:00 JST に新しいボスが現れる
           </div>
         </footer>

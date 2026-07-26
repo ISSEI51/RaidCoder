@@ -33,9 +33,9 @@ export function buildThemeUserPrompt(weekNumber: number, character: BossCharacte
 - 姿: ${character.creature}
 
 ## ボス
-- boss_name: 上記キャラクターのボスとしての名前(日本語カタカナ中心)。
+- boss_name: 上記キャラクターのボスとしての名前(英語表記。アルファベットのみ)。
   モチーフツール名をもじった、キャラクターの姿に合う強そうな名前にすること
-  (例: Docker のクジラなら「ドックジラ」のような方向性。この例は使わないこと)
+  (例: Docker のクジラなら「Dockzilla」のような方向性。この例は使わないこと)
 - boss_flavor: ボスの口上(日本語、2〜4文)。
   **モチーフツール「${character.tool}」の開発者やヘビーユーザーが言いそうなセリフ・あるあるネタ**を
   ボスの脅し文句に混ぜること(例: Docker なら「俺の環境では動く」など)。

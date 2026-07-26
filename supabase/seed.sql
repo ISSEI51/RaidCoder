@@ -10,7 +10,7 @@ values (
   -- (セッション TZ 依存の date_trunc('week', now()) だと UTC 基準になり 9 時間ずれる)
   date_trunc('week', now() at time zone 'Asia/Tokyo') at time zone 'Asia/Tokyo',
   (date_trunc('week', now() at time zone 'Asia/Tokyo') + interval '7 days') at time zone 'Asia/Tokyo',
-  'チュートリアル・スライム',
+  'Tutorial Slime',
   '最初の獲物。だが油断するな——奴のHPは6万ある。仲間と力を合わせて削り切れ!',
   60000,
   60000,

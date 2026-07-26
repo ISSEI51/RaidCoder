@@ -24,7 +24,7 @@ export async function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:gap-6 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-[96rem] items-center gap-3 px-4 sm:gap-6 sm:px-6">
         <Link
           href="/"
           className="flex shrink-0 items-center gap-1.5 text-base font-black tracking-wide text-foreground"
