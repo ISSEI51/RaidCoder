@@ -1,0 +1,145 @@
+version: 1
+updated_at: "2026-08-25T15:55:58Z"
+items:
+  - id: "RC-OPS-001"
+    project: "RaidCoder"
+    title: "討伐クエスト2列表示(feature/quest-two-columns)の受け入れ"
+    state: "acceptance"
+    priority:
+      impact: 2
+      urgency: 4
+      confidence: 5
+      ease: 5
+      override: null
+    evidence: "PR #6。ローカル(幅1456px)でダッシュボードを表示し、SAB 列と CDE 列が並ぶことを確認済み。自動レビューの指摘2件(1列時に右半分が空く / 分割位置のリテラル 3)は b650479 で修正済み"
+    acceptance_conditions:
+      - "ダッシュボードで SAB 列と CDE 列が意図どおり並ぶ(ブラウザで確認済み)"
+      - "狭い画面幅で 1 列に折り返る(grid-cols-1 lg:grid-cols-2 のクラス定義で確認。表示確認は未実施)"
+      - "PR #6 を main にマージする"
+    out_of_scope: "問題カード自体の情報設計の変更"
+    owner: null
+    next_action: "PR #6 をマージする"
+    blocker: null
+    updated_at: "2026-08-25T15:55:58Z"
+
+  - id: "RC-OPS-002"
+    project: "RaidCoder"
+    title: "週次 rotate の失敗を検知する手段がない"
+    state: "acceptance"
+    priority:
+      impact: 4
+      urgency: 4
+      confidence: 4
+      ease: 3
+      override: null
+    evidence: "PR #8。ROTATE_WEBHOOK_URL(任意)へ実行結果を1件 POST する実装。失敗時・スキップ時・設定不足時をローカルで実機確認し、終了コード1を維持。自動レビューの指摘3件は a4b4fa5 で修正済み。generator のテストは63件 PASS"
+    acceptance_conditions:
+      - "rotate が非ゼロ終了したとき、ログファイルを見なくても失敗を知る手段がある(実機確認済み)"
+      - "rotate 成功時に、対象の週番号と status が記録として残る(skipped で実機確認。success の実機確認は AI 生成を伴うため未実施)"
+      - "月額コスト上限 ¥5,000 を超えない(追加課金なし)"
+      - "通知先 URL を決めて本番の generator/.env に ROTATE_WEBHOOK_URL を設定する"
+    out_of_scope: "rotate 自体の自動リトライ、generator の生成ロジック変更"
+    owner: null
+    next_action: "通知先(Slack か Discord の Incoming Webhook)を決めて設定し、PR #8 をマージする"
+    blocker: null
+    updated_at: "2026-08-25T15:55:58Z"
+
+  - id: "RC-UX-001"
+    project: "RaidCoder"
+    title: "ログイン後に元のURLへ戻る"
+    state: "acceptance"
+    priority:
+      impact: 3
+      urgency: 2
+      confidence: 5
+      ease: 4
+      override: null
+    evidence: "PR #7。ローカルの GitHub OAuth で3条件とも実機確認済み。自動レビューの指摘2件(重複クエリで /login が HTTP 500 / next 検証の二重実装)は c479c89 で修正済み(修正前 500 → 修正後 200 を確認)"
+    acceptance_conditions:
+      - "未ログインで /problems/<id> を開き、GitHub ログイン後に同じ /problems/<id> に戻る(PASS)"
+      - "next に外部URLを与えても外部へ遷移しない(PASS)"
+      - "next が無い場合は従来どおり / に戻る(PASS)"
+    out_of_scope: "認証プロバイダの追加、ログイン画面のデザイン変更"
+    owner: null
+    next_action: "PR #7 をマージする"
+    blocker: null
+    updated_at: "2026-08-25T15:55:58Z"
+
+  - id: "RC-QA-001"
+    project: "RaidCoder"
+    title: "テストと lint が自動実行されない"
+    state: "specified"
+    priority:
+      impact: 3
+      urgency: 3
+      confidence: 5
+      ease: 4
+      override: null
+    evidence: "リポジトリに .github が存在せず CI がない。generator に vitest のテスト4ファイル、judge-bridge に2ファイルがあるが、どこからも自動実行されない。web/package.json の scripts は dev/build/start のみで lint も test もなく、ESLint 設定ファイルも無い(web/src/app/login/page.tsx には eslint-disable コメントだけが残っている)"
+    acceptance_conditions:
+      - "push と PR で generator と judge-bridge の vitest が実行され、失敗時に PR 上で分かる"
+      - "web の型チェック(tsc --noEmit または next build)が同じ経路で実行される"
+      - "既存テストがすべて PASS する状態で main に入る"
+    out_of_scope: "web のテスト新規作成、E2E テストの導入"
+    owner: null
+    next_action: "実装ブリーフを作成する(対象は CI ワークフロー1本と package.json の script 追加のみ)。generator は63件・judge-bridge は既存テストがあり、web は tsc --noEmit を対象にする"
+    blocker: null
+    updated_at: "2026-08-25T15:55:58Z"
+
+  - id: "RC-UX-002"
+    project: "RaidCoder"
+    title: "実行環境の言語バージョンが提出画面から分からない"
+    state: "discovery"
+    priority:
+      impact: 3
+      urgency: 3
+      confidence: 4
+      ease: 4
+      override: null
+    evidence: "docs/CONTRACT.md §1 と README の既知の制約のとおり、Judge0 CE v1.13.1 の言語は Python 3.8 / Rust 1.40 / TypeScript 3.7 / Java(OpenJDK 13)。新しい構文を書くと CE になるが、この制約は README と CONTRACT にのみ書かれており、提出画面(web/src/components/SubmitPanel.tsx)から辿れない"
+    acceptance_conditions:
+      - "調査結果として、提出画面での表示案と Judge0 側の言語更新可否の2案を比較した結論を1つ出す"
+    out_of_scope: "Judge0 のバージョンアップ作業そのもの"
+    owner: null
+    next_action: "CE の実発生率を確認できるか(submissions の status 集計)を調べ、対応方針を1案に絞る"
+    blocker: null
+    updated_at: "2026-08-25T10:54:51Z"
+
+  - id: "RC-BAL-001"
+    project: "RaidCoder"
+    title: "少人数時のボスHPと討伐可否のバランス"
+    state: "discovery"
+    priority:
+      impact: 3
+      urgency: 2
+      confidence: 2
+      ease: 3
+      override: null
+    evidence: "docs/CONTRACT.md §4 のボスHPは 20000 × アクティブプレイヤー数(最低3)。3人の場合 60000 で、全員が全6問(合計 21000 × 速度倍率)を AC しても討伐に届かない計算になる。実プレイデータでの検証はまだ行っていない"
+    acceptance_conditions:
+      - "想定プレイヤー数ごとの理論最大ダメージと boss_max_hp を比較した数値を出す"
+      - "係数を変更するか据え置くかの結論を1つ出す"
+    out_of_scope: "ダメージ計算式そのものの再設計"
+    owner: null
+    next_action: "人数別の理論最大ダメージを算出して HP と突き合わせる"
+    blocker: null
+    updated_at: "2026-08-25T10:54:51Z"
+
+  - id: "RC-UX-003"
+    project: "RaidCoder"
+    title: "ログイン失敗時に alert() を使用している"
+    state: "inbox"
+    priority:
+      impact: 1
+      urgency: 1
+      confidence: 5
+      ease: 5
+      override: null
+    evidence: "web/src/components/LoginButton.tsx がエラー時に window.alert を呼ぶ。ログイン画面には error クエリ用のエラー表示領域が既にあり、表示方法が2系統に分かれている"
+    acceptance_conditions:
+      - "OAuth 開始失敗時のエラーが、既存のエラー表示領域と同じ見た目で表示される"
+    out_of_scope: "認証フロー自体の変更"
+    owner: null
+    next_action: "RC-UX-001 の実装時にまとめて扱うか判断する"
+    blocker: null
+    updated_at: "2026-08-25T10:54:51Z"
