@@ -1,5 +1,5 @@
 version: 1
-updated_at: "2026-08-25T16:05:21Z"
+updated_at: "2026-08-25T16:20:08Z"
 items:
   - id: "RC-OPS-001"
     project: "RaidCoder"
@@ -142,3 +142,24 @@ items:
     next_action: "単独の小さな変更として実装する(PR #7 では対象外としたため alert() は残っている)"
     blocker: null
     updated_at: "2026-08-25T16:05:21Z"
+
+  - id: "RC-BAL-002"
+    project: "RaidCoder"
+    title: "週内の絶対時刻だけで週間ランキングが決まり、解答の速さが評価されない"
+    state: "discovery"
+    priority:
+      impact: 4
+      urgency: 2
+      confidence: 4
+      ease: 2
+      override: null
+    evidence: "0001_init.sql:491-495 の速度倍率は (提出時刻 − 週開始) / 週の長さ のみに依存し、個人ごとの起点が無い。submissions に問題の閲覧時刻が無く所要時間を算出できない。全問AC(基礎21000)の週間ダメージは週開始直後27300 / 週末21000、6問先制なら40950。perf は週間ダメージの順位のみで決まる(0001_init.sql:557-575)ため、全問AC者が複数いると順位を分ける唯一の要素が提出の絶対時刻になる。倍率を廃止すると全員同順位になる。本番の提出時刻分布は未確認"
+    acceptance_conditions:
+      - "個人の解答所要時間の定義を1つ決め、抜け道と許容範囲を明記する"
+      - "参戦時刻の異なる複数プレイヤーで、決めた方式のランキング結果を数値で試算し現行方式と比較する"
+      - "ボスHPへの貢献(早く削るほど良い)の動機が維持されることを試算で確認する"
+    out_of_scope: "基礎ダメージ表の改定、レート計算式の変更、ボスHP式の変更"
+    owner: null
+    next_action: "所要時間の定義(問題の閲覧時刻を記録する / 週内の自分の初提出を起点にする)を比較し、1つ決める"
+    blocker: null
+    updated_at: "2026-08-25T16:20:08Z"
