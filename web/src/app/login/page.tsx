@@ -17,9 +17,14 @@ const FEATURES: { icon: LucideIcon; text: React.ReactNode }[] = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
+  // 外部URLを渡されても外部へは遷移させない(最終判定は /auth/callback 側)
+  const safeNext =
+    next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
+      ? next
+      : undefined;
 
   return (
     // mx/px の calc は main の余白を打ち消して画面幅いっぱいに広げるため(装飾を画面端で切る)
@@ -72,7 +77,7 @@ export default async function LoginPage({
       )}
 
       <div className="mt-8 flex w-full justify-center">
-        <LoginButton />
+        <LoginButton next={safeNext} />
       </div>
       <p className="mt-4 text-xs text-muted-foreground">
         参戦には GitHub アカウントが必要です
