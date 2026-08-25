@@ -60,7 +60,8 @@ export default async function DashboardPage() {
 
   const problems = sortByRank(problemsRes.data ?? []);
   // クエスト一覧はスクロールせず全問見渡せるよう、上位(S/A/B)・下位(C/D/E)の2列に分ける
-  const upperRanks = RANK_ORDER.slice(0, 3);
+  // 分割位置は RANK_ORDER の長さから導出する(ランクを増減しても分割が崩れないように)
+  const upperRanks = RANK_ORDER.slice(0, Math.ceil(RANK_ORDER.length / 2));
   const problemColumns = [
     problems.filter((p) => upperRanks.includes(p.rank)),
     problems.filter((p) => !upperRanks.includes(p.rank)),
@@ -95,7 +96,12 @@ export default async function DashboardPage() {
               問題を準備中です…
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            // 片方のランク群しか無い週では1列のまま全幅を使う(右半分を空けない)
+            <div
+              className={`grid grid-cols-1 gap-3 ${
+                problemColumns.length > 1 ? "lg:grid-cols-2" : ""
+              }`}
+            >
               {problemColumns.map((column) => (
                 <div
                   key={column[0].rank}
