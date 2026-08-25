@@ -1,5 +1,5 @@
 version: 1
-updated_at: "2026-08-25T16:20:08Z"
+updated_at: "2026-08-25T16:26:18Z"
 items:
   - id: "RC-OPS-001"
     project: "RaidCoder"
@@ -23,24 +23,32 @@ items:
 
   - id: "RC-OPS-002"
     project: "RaidCoder"
-    title: "週次 rotate の失敗を検知する手段がない"
-    state: "acceptance"
+    title: "週次 rotate の失敗をメールで検知する"
+    state: "specified"
     priority:
       impact: 4
       urgency: 4
       confidence: 4
       ease: 3
-      override: null
-    evidence: "PR #8。ROTATE_WEBHOOK_URL(任意)へ実行結果を1件 POST する実装。失敗時・スキップ時・設定不足時をローカルで実機確認し、終了コード1を維持。自動レビューの指摘3件は a4b4fa5 で修正済み。generator のテストは63件 PASS"
+      override: "通知手段はメールと決定(2026-08-25)"
+    evidence: "cron は rotate の出力をログファイルに追記するだけで通知経路が無い。PR #8 で Webhook 版を実装したが、通知手段をメールに変更する。あわせて PR #8 の欠陥を修正する: infra/docker-compose.yml の generator は environment を明示列挙しており ROTATE_WEBHOOK_URL が含まれていないため、本番の docker compose run では設定値がコンテナに届かない。DEPLOY.md の「generator/.env に設定」も誤りで、本番の設定は infra/.env に置く"
+    approach: "HTTPS のメール送信 API を fetch で呼ぶ(新規依存なし)。既定のエンドポイントは Resend、env で差し替え可能。PR #8 の RunReport / formatRunReport / 3状態通知の構造は維持し、送信部のみ差し替える。SMTP(nodemailer)と AWS SES(SigV4)は新規依存が必要なため採らない。cron の MAILTO はホストへの MTA 導入と AWS のポート25制限のため採らない"
     acceptance_conditions:
-      - "rotate が非ゼロ終了したとき、ログファイルを見なくても失敗を知る手段がある(実機確認済み)"
-      - "rotate 成功時に、対象の週番号と status が記録として残る(skipped で実機確認。success の実機確認は AI 生成を伴うため未実施)"
-      - "月額コスト上限 ¥5,000 を超えない(追加課金なし)"
-    out_of_scope: "rotate 自体の自動リトライ、generator の生成ロジック変更"
+      - "rotate が非ゼロ終了したとき、件名に FAILED を含むメールが ROTATE_EMAIL_TO に届く"
+      - "成功・スキップも同じ経路で1通届き、件名に対象の週番号が入る"
+      - "ROTATE_EMAIL_* が未設定でも rotate は従来どおり動作し、終了コードが変わらない"
+      - "メール送信が失敗しても rotate の成否と終了コードが変わらない"
+      - "docker compose run --rm generator rotate で設定値がコンテナに届く"
+      - "generator のテストが全件 PASS する"
+    verification: "ユニット: payload 組み立て・未設定時に fetch を呼ばない・送信失敗で例外を投げない・detail の1行化維持。ローカル: ROTATE_EMAIL_ENDPOINT を受信サーバーに向け、到達不能な SUPABASE_URL で FAILED と終了コード1、ends_at を未来へ動かして SKIPPED(確認後に復元)、API キー未設定で送信なし。本番: Lightsail で rotate を1回手動実行しメール到達を確認"
+    out_of_scope: "rotate の自動リトライ、生成ロジックの変更、judge-bridge / web の通知、送信 API アカウントの作成と課金設定、独自ドメインの DNS 設定"
+    worktree_boundary: "generator/** と infra/docker-compose.yml(generator サービス)、infra/DEPLOY.md §4、docs/CONTRACT.md §9。web/ judge-bridge/ supabase/ には触れない。作業ブランチは feature/rotate-run-notification(PR #8 をメール版に更新)"
+    risk: "検証済みドメインが無い場合、送信 API の差出人制限で宛先がアカウント所有者に限られることがある(未確認)。メールの遅延・迷惑メール振り分けの可能性。API キーが infra/.env に増える"
+    size: "M"
     owner: null
-    next_action: "通知先(Slack か Discord の Incoming Webhook)を決めて設定し、PR #8 をマージする"
+    next_action: "送信 API のアカウントとキーを用意し、feature/rotate-run-notification 上で実装する"
     blocker: null
-    updated_at: "2026-08-25T16:05:21Z"
+    updated_at: "2026-08-25T16:26:18Z"
 
   - id: "RC-UX-001"
     project: "RaidCoder"
