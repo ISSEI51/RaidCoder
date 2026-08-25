@@ -2,8 +2,10 @@
 //
 // cron から実行される rotate は、失敗してもログファイルを読むまで気づけない。
 // 実行のたびに結果を1件の Webhook へ POST し、ログを見なくても成否が分かるようにする。
-// 送信先は Slack / Discord の Incoming Webhook や Healthchecks の ping URL など
-// 「JSON を POST できる URL」であれば何でもよい。未設定なら送信しない。
+// 送信先は Slack / Discord の Incoming Webhook など「JSON を POST できる URL」。
+// 未設定なら送信しない。
+// 死活監視サービスの ping URL は成否で URL を変える必要があるものが多く、
+// 単一 URL への POST では失敗を成功として記録してしまうため対象外。
 import { log, warn } from './log.js';
 
 export type RunStatus = 'success' | 'skipped' | 'failure';
@@ -21,17 +23,29 @@ export interface RunReport {
   durationMs: number;
 }
 
+/** 通知本文の上限。Discord の 2000 文字制限を下回るように余裕を持たせる */
+const DETAIL_MAX_LENGTH = 500;
+
 const STATUS_LABEL: Record<RunStatus, string> = {
   success: 'OK',
   skipped: 'SKIPPED',
   failure: 'FAILED',
 };
 
-/** 通知本文と rotate のサマリログに使う1行表現 */
+/**
+ * 通知本文と rotate のサマリログに使う1行表現。
+ * detail は上流の例外メッセージ(改行と stderr を含みうる)なので、
+ * 1行に畳んで DETAIL_MAX_LENGTH で切り詰める。
+ */
 export function formatRunReport(report: RunReport): string {
   const seconds = (report.durationMs / 1000).toFixed(1);
   const week = report.weekNumber === null ? '-' : `第${report.weekNumber}週`;
-  return `RaidCoder ${report.command} ${STATUS_LABEL[report.status]} | ${week} | ${report.detail} | ${seconds}s | ${report.startedAt}`;
+  const collapsed = report.detail.replace(/\s+/g, ' ').trim();
+  const detail =
+    collapsed.length > DETAIL_MAX_LENGTH
+      ? `${collapsed.slice(0, DETAIL_MAX_LENGTH)}…(以下省略)`
+      : collapsed;
+  return `RaidCoder ${report.command} ${STATUS_LABEL[report.status]} | ${week} | ${detail} | ${seconds}s | ${report.startedAt}`;
 }
 
 /**

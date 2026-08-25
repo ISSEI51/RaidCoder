@@ -33,6 +33,20 @@ describe('formatRunReport', () => {
   it('スキップ時は SKIPPED になる', () => {
     expect(formatRunReport(report({ status: 'skipped' }))).toContain('SKIPPED');
   });
+
+  it('改行を含む detail を1行に畳む', () => {
+    const line = formatRunReport(
+      report({ status: 'failure', detail: 'claude CLI が異常終了しました\n  stderr:\n  panic' }),
+    );
+    expect(line).not.toContain('\n');
+    expect(line).toContain('claude CLI が異常終了しました stderr: panic');
+  });
+
+  it('長すぎる detail を切り詰める(Discord の 2000 文字制限対策)', () => {
+    const line = formatRunReport(report({ status: 'failure', detail: 'x'.repeat(5000) }));
+    expect(line).toContain('…(以下省略)');
+    expect(line.length).toBeLessThan(700);
+  });
 });
 
 describe('postRunReport', () => {

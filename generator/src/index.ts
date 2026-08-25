@@ -5,7 +5,7 @@
 //   node dist/index.js finalize --week <n>
 //   node dist/index.js activate --week <n>
 import { DateTime } from 'luxon';
-import { loadConfig, type Config } from './config.js';
+import { loadConfig, readRotateWebhookUrl, type Config } from './config.js';
 import { BASE_DAMAGE, HP_PER_PLAYER } from './constants.js';
 import { Db, type RaidWeekRow, type WeekPayload } from './db.js';
 import { Judge0Client } from './judge0.js';
@@ -221,9 +221,13 @@ async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<Rotat
 
 /**
  * rotate を実行し、成功・スキップ・失敗のいずれでも結果を通知する。
+ * 引数の解釈・設定の読み込み・DB クライアントの生成も try の内側に入れる
+ * (環境変数の不足など rotate 開始前の失敗も無通知にしないため)。
  * 失敗はそのまま再送出するので、プロセスの終了コードは従来どおり 1 になる。
  */
-async function runRotateWithReport(config: Config, db: Db, flags: CliFlags): Promise<void> {
+async function runRotateWithReport(rest: string[]): Promise<void> {
+  // loadConfig() 自体が失敗しても通知できるよう、URL は Config と独立に読む
+  const webhookUrl = readRotateWebhookUrl();
   const startedAt = new Date();
   const finish = (partial: Omit<RunReport, 'command' | 'startedAt' | 'durationMs'>): RunReport => ({
     command: 'rotate',
@@ -233,14 +237,14 @@ async function runRotateWithReport(config: Config, db: Db, flags: CliFlags): Pro
   });
 
   try {
+    const flags = parseFlags(rest);
+    const config = loadConfig();
+    const db = new Db(config.supabaseUrl, config.supabaseServiceRoleKey);
     const outcome = await cmdRotate(config, db, flags);
-    await postRunReport(config.rotateWebhookUrl, finish(outcome));
+    await postRunReport(webhookUrl, finish(outcome));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    await postRunReport(
-      config.rotateWebhookUrl,
-      finish({ status: 'failure', weekNumber: null, detail: message }),
-    );
+    await postRunReport(webhookUrl, finish({ status: 'failure', weekNumber: null, detail: message }));
     throw err;
   }
 }
@@ -291,6 +295,12 @@ async function main(): Promise<void> {
     return;
   }
 
+  // rotate だけは引数と設定の読み込みも含めて通知の対象にする
+  if (command === 'rotate') {
+    await runRotateWithReport(rest);
+    return;
+  }
+
   const flags = parseFlags(rest);
   const config = loadConfig();
   const db = new Db(config.supabaseUrl, config.supabaseServiceRoleKey);
@@ -298,9 +308,6 @@ async function main(): Promise<void> {
   switch (command) {
     case 'generate':
       await cmdGenerate(config, db, flags);
-      break;
-    case 'rotate':
-      await runRotateWithReport(config, db, flags);
       break;
     case 'finalize':
       await cmdFinalize(db, requireWeek(flags));
