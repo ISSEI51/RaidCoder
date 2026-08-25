@@ -10,6 +10,8 @@ export interface Config {
   aiProvider: AiProviderName;
   anthropicApiKey: string | undefined;
   aiModel: string;
+  /** rotate の実行結果を POST する Webhook URL(未設定なら通知しない) */
+  rotateWebhookUrl: string | undefined;
 }
 
 function required(name: string): string {
@@ -38,5 +40,6 @@ export function loadConfig(): Config {
     aiProvider,
     anthropicApiKey: optional('ANTHROPIC_API_KEY'),
     aiModel: optional('AI_MODEL') ?? 'claude-sonnet-5',
+    rotateWebhookUrl: optional('ROTATE_WEBHOOK_URL'),
   };
 }

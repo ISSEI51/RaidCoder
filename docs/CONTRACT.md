@@ -117,7 +117,10 @@ JUDGE0_AUTH_TOKEN=
 AI_PROVIDER=claude-cli        # claude-cli(ローカル: claude setup-token) | anthropic-api(本番)
 ANTHROPIC_API_KEY=            # anthropic-api のときのみ必須
 AI_MODEL=claude-sonnet-5      # 任意で claude-opus-4-8 等に変更可
+ROTATE_WEBHOOK_URL=           # 任意: rotate の実行結果(成功/スキップ/失敗)を POST する URL
 ```
+
+`ROTATE_WEBHOOK_URL` は `rotate` のときだけ使う。実行のたびに1件、`{text, content, command, status, weekNumber, detail, startedAt, durationMs}` の JSON を POST する(`text` / `content` は同じ1行サマリ。Slack と Discord のどちらの Incoming Webhook でもそのまま表示される)。`status` は `success` / `skipped` / `failure`。未設定なら送信せず警告のみ。通知の送信失敗は rotate の成否と終了コードを変えない。
 
 ## 10. generator CLI コマンド
 

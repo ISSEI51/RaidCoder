@@ -10,6 +10,7 @@ import { BASE_DAMAGE, HP_PER_PLAYER } from './constants.js';
 import { Db, type RaidWeekRow, type WeekPayload } from './db.js';
 import { Judge0Client } from './judge0.js';
 import { log, warn } from './log.js';
+import { postRunReport, type RunReport } from './notify.js';
 import { buildProblem } from './pipeline/problem.js';
 import { generateTheme } from './pipeline/theme.js';
 import { createProvider } from './providers/index.js';
@@ -172,7 +173,14 @@ async function cmdGenerate(config: Config, db: Db, flags: CliFlags): Promise<voi
   await ensureUpcomingWeek(config, db, flags.skipValidation);
 }
 
-async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<void> {
+/** rotate の結果。通知とサマリログに使う */
+interface RotateOutcome {
+  status: 'success' | 'skipped';
+  weekNumber: number | null;
+  detail: string;
+}
+
+async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<RotateOutcome> {
   const now = DateTime.now();
 
   // 1. 現行 active 週の finalize(冪等: 終了時刻を過ぎている場合のみ)
@@ -188,7 +196,11 @@ async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<void>
       log(
         `active な第${active.week_number}週はまだ終了時刻 (${active.ends_at}) 前のため、rotate をスキップします`,
       );
-      return;
+      return {
+        status: 'skipped',
+        weekNumber: active.week_number,
+        detail: `終了時刻 (${active.ends_at}) 前のためローテーションせず`,
+      };
     }
   } else {
     log('active な週がないため finalize をスキップします');
@@ -200,6 +212,37 @@ async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<void>
   // 3. 次週を activate(ensureUpcomingWeek が返す週は ends_at が十分先であることを保証済み)
   const result = await db.activateWeek(next.id);
   log(`第${next.week_number}週「${next.boss_name}」を activate しました: ${JSON.stringify(result)}`);
+  return {
+    status: 'success',
+    weekNumber: next.week_number,
+    detail: `「${next.boss_name}」を activate (${JSON.stringify(result)})`,
+  };
+}
+
+/**
+ * rotate を実行し、成功・スキップ・失敗のいずれでも結果を通知する。
+ * 失敗はそのまま再送出するので、プロセスの終了コードは従来どおり 1 になる。
+ */
+async function runRotateWithReport(config: Config, db: Db, flags: CliFlags): Promise<void> {
+  const startedAt = new Date();
+  const finish = (partial: Omit<RunReport, 'command' | 'startedAt' | 'durationMs'>): RunReport => ({
+    command: 'rotate',
+    startedAt: startedAt.toISOString(),
+    durationMs: Date.now() - startedAt.getTime(),
+    ...partial,
+  });
+
+  try {
+    const outcome = await cmdRotate(config, db, flags);
+    await postRunReport(config.rotateWebhookUrl, finish(outcome));
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    await postRunReport(
+      config.rotateWebhookUrl,
+      finish({ status: 'failure', weekNumber: null, detail: message }),
+    );
+    throw err;
+  }
 }
 
 async function cmdFinalize(db: Db, weekNumber: number): Promise<void> {
@@ -257,7 +300,7 @@ async function main(): Promise<void> {
       await cmdGenerate(config, db, flags);
       break;
     case 'rotate':
-      await cmdRotate(config, db, flags);
+      await runRotateWithReport(config, db, flags);
       break;
     case 'finalize':
       await cmdFinalize(db, requireWeek(flags));

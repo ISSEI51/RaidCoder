@@ -236,6 +236,34 @@ sudo crontab -e
 
 > サーバーの TZ を JST にしたい場合は `sudo timedatectl set-timezone Asia/Tokyo` した上で `0 0 * * 1`(月曜 00:00)にしてもよい。**どちらか一方だけ**にすること。
 
+### 実行結果の通知(推奨)
+
+cron の出力はログファイルにしか残らないため、`rotate` が失敗しても誰も気づかないままになる。`generator/.env` に `ROTATE_WEBHOOK_URL` を設定すると、実行のたびに結果が1件 POST される(成功・スキップ・失敗のすべて)。
+
+```bash
+# generator/.env(Slack / Discord の Incoming Webhook URL など)
+ROTATE_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+```
+
+送信される JSON:
+
+```json
+{
+  "text": "RaidCoder rotate OK | 第12週 | 「Pythonaga」を activate | 92.4s | 2026-08-24T15:00:00.000Z",
+  "content": "(text と同じ)",
+  "command": "rotate",
+  "status": "success",
+  "weekNumber": 12,
+  "detail": "「Pythonaga」を activate",
+  "startedAt": "2026-08-24T15:00:00.000Z",
+  "durationMs": 92400
+}
+```
+
+- `status` は `success`(次週を activate した) / `skipped`(現行の週がまだ終了時刻前) / `failure`(例外で終了、プロセスの終了コードは 1)
+- 通知の送信に失敗しても rotate の成否と終了コードは変わらない(警告をログに出すだけ)
+- 未設定でも rotate は従来どおり動作する。その場合は下のログ確認で成否を見る
+
 ### ログ確認
 
 ```bash
