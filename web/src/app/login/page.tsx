@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MessagesSquare, Swords, Trophy, Zap, type LucideIcon } from "lucide-react";
 import { LoginButton } from "@/components/LoginButton";
+import { safeNextPath } from "@/lib/next-path";
 
 export const metadata: Metadata = {
   title: "ログイン",
@@ -17,14 +18,11 @@ const FEATURES: { icon: LucideIcon; text: React.ReactNode }[] = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string | string[] }>;
 }) {
   const { error, next } = await searchParams;
   // 外部URLを渡されても外部へは遷移させない(最終判定は /auth/callback 側)
-  const safeNext =
-    next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
-      ? next
-      : undefined;
+  const safeNext = safeNextPath(next);
 
   return (
     // mx/px の calc は main の余白を打ち消して画面幅いっぱいに広げるため(装飾を画面端で切る)
