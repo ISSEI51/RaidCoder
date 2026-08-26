@@ -238,31 +238,50 @@ sudo crontab -e
 
 ### 実行結果の通知(推奨)
 
-cron の出力はログファイルにしか残らないため、`rotate` が失敗しても誰も気づかないままになる。`generator/.env` に `ROTATE_WEBHOOK_URL` を設定すると、実行のたびに結果が1件 POST される(成功・スキップ・失敗のすべて)。
+cron の出力はログファイルにしか残らないため、`rotate` が失敗しても誰も気づかないままになる。`ROTATE_EMAIL_*` を設定すると、実行のたびに結果が1通メールで届く(成功・スキップ・失敗のすべて)。週明けに何も届かないこと自体が異常の合図になる。
+
+設定は **`infra/.env`** に置く(generator は `docker compose run` で起動するため、値は compose の `environment` 経由でコンテナへ渡される):
+
+```
+# infra/.env
+ROTATE_EMAIL_API_KEY=<送信 API のキー>
+ROTATE_EMAIL_FROM=raidcoder@<あなたのドメイン>
+ROTATE_EMAIL_TO=<自分のメールアドレス>
+# 既定は Resend。同じ形式(Bearer 認証 + JSON body)の API なら差し替えられる
+# ROTATE_EMAIL_ENDPOINT=https://api.resend.com/emails
+```
+
+送信サービス側の準備:
+
+1. Resend(https://resend.com)などでアカウントを作り、API キーを発行する
+2. 差出人アドレスに使うドメインを検証する。ドメインを用意しない場合、送信できる宛先が
+   アカウント所有者のアドレスに限られることがある(サービスの制限を確認すること)
+3. 週1回の送信なので、無料枠で足りる(月額コストは増えない)
+
+届くメール:
+
+```
+件名: [RaidCoder] rotate OK — 第12週
+本文: RaidCoder rotate OK | 第12週 | 「Pythonaga」を activate | 92.4s | 2026-08-24T15:00:00.000Z
+
+      status: success
+      week: 12
+      startedAt: 2026-08-24T15:00:00.000Z
+      durationMs: 92400
+
+      detail:
+      「Pythonaga」を activate
+```
+
+- 件名の `OK` / `SKIPPED` / `FAILED` が結果。`SKIPPED` は現行の週がまだ終了時刻前だった場合で、`FAILED` は例外で終了した場合(プロセスの終了コードは 1)
+- `ROTATE_EMAIL_API_KEY` / `ROTATE_EMAIL_FROM` / `ROTATE_EMAIL_TO` のいずれかが欠けていれば送信せず、警告をログに出すだけ
+- メール送信に失敗しても rotate の成否と終了コードは変わらない
+- 設定後に1回手動実行して到達を確認する:
 
 ```bash
-# generator/.env(Slack / Discord の Incoming Webhook URL など)
-ROTATE_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+cd ~/RaidCoder/infra
+docker compose run --rm generator rotate   # 週の途中なら SKIPPED のメールが届く
 ```
-
-送信される JSON:
-
-```json
-{
-  "text": "RaidCoder rotate OK | 第12週 | 「Pythonaga」を activate | 92.4s | 2026-08-24T15:00:00.000Z",
-  "content": "(text と同じ)",
-  "command": "rotate",
-  "status": "success",
-  "weekNumber": 12,
-  "detail": "「Pythonaga」を activate",
-  "startedAt": "2026-08-24T15:00:00.000Z",
-  "durationMs": 92400
-}
-```
-
-- `status` は `success`(次週を activate した) / `skipped`(現行の週がまだ終了時刻前) / `failure`(例外で終了、プロセスの終了コードは 1)
-- 通知の送信に失敗しても rotate の成否と終了コードは変わらない(警告をログに出すだけ)
-- 未設定でも rotate は従来どおり動作する。その場合は下のログ確認で成否を見る
 
 ### ログ確認
 

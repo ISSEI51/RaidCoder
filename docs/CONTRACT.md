@@ -117,10 +117,20 @@ JUDGE0_AUTH_TOKEN=
 AI_PROVIDER=claude-cli        # claude-cli(ローカル: claude setup-token) | anthropic-api(本番)
 ANTHROPIC_API_KEY=            # anthropic-api のときのみ必須
 AI_MODEL=claude-sonnet-5      # 任意で claude-opus-4-8 等に変更可
-ROTATE_WEBHOOK_URL=           # 任意: rotate の実行結果(成功/スキップ/失敗)を POST する URL
+ROTATE_EMAIL_API_KEY=         # 任意: rotate の実行結果メールの送信 API キー
+ROTATE_EMAIL_FROM=            # 差出人アドレス
+ROTATE_EMAIL_TO=              # 宛先アドレス(カンマ区切りで複数可)
+ROTATE_EMAIL_ENDPOINT=        # 既定 https://api.resend.com/emails
 ```
 
-`ROTATE_WEBHOOK_URL` は `rotate` のときだけ使う。実行のたびに1件、`{text, content, command, status, weekNumber, detail, startedAt, durationMs}` の JSON を POST する(`text` / `content` は同じ1行サマリ。Slack と Discord のどちらの Incoming Webhook でもそのまま表示される)。`status` は `success` / `skipped` / `failure`。未設定なら送信せず警告のみ。通知の送信失敗は rotate の成否と終了コードを変えない。
+`ROTATE_EMAIL_*` は `rotate` のときだけ使う。実行のたびに1通、成功・スキップ・失敗のいずれでもメールを送る(週明けに何も届かないこと自体が異常の合図になる)。
+
+- 送信は `ROTATE_EMAIL_ENDPOINT` への POST。`Authorization: Bearer <ROTATE_EMAIL_API_KEY>` と `{"from","to","subject","text"}` の JSON body で、Resend の形式に合わせている。同じ形式の API であればエンドポイントを差し替えられる
+- 件名: `[RaidCoder] rotate OK — 第12週`(`OK` / `SKIPPED` / `FAILED`。週が特定できない失敗では週番号を付けない)
+- 本文: 1行サマリ + `status` / `week` / `startedAt` / `durationMs` + 切り詰めていない `detail` 全文
+- `ROTATE_EMAIL_API_KEY` / `ROTATE_EMAIL_FROM` / `ROTATE_EMAIL_TO` のいずれかが欠けていれば送信せず警告のみ(一部だけ設定されている場合は設定漏れとして警告する)
+- メール送信の失敗は rotate の成否と終了コードを変えない
+- 本番(Lightsail)ではこれらを `infra/.env` に置き、`infra/docker-compose.yml` の generator の `environment` 経由でコンテナへ渡す
 
 ## 10. generator CLI コマンド
 

@@ -5,12 +5,12 @@
 //   node dist/index.js finalize --week <n>
 //   node dist/index.js activate --week <n>
 import { DateTime } from 'luxon';
-import { loadConfig, readRotateWebhookUrl, type Config } from './config.js';
+import { loadConfig, readRotateEmailConfig, type Config } from './config.js';
 import { BASE_DAMAGE, HP_PER_PLAYER } from './constants.js';
 import { Db, type RaidWeekRow, type WeekPayload } from './db.js';
 import { Judge0Client } from './judge0.js';
 import { log, warn } from './log.js';
-import { postRunReport, type RunReport } from './notify.js';
+import { sendRunReportEmail, type RunReport } from './notify.js';
 import { buildProblem } from './pipeline/problem.js';
 import { generateTheme } from './pipeline/theme.js';
 import { createProvider } from './providers/index.js';
@@ -226,8 +226,8 @@ async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<Rotat
  * 失敗はそのまま再送出するので、プロセスの終了コードは従来どおり 1 になる。
  */
 async function runRotateWithReport(rest: string[]): Promise<void> {
-  // loadConfig() 自体が失敗しても通知できるよう、URL は Config と独立に読む
-  const webhookUrl = readRotateWebhookUrl();
+  // loadConfig() 自体が失敗しても通知できるよう、メール設定は Config と独立に読む
+  const emailConfig = readRotateEmailConfig();
   const startedAt = new Date();
   const finish = (partial: Omit<RunReport, 'command' | 'startedAt' | 'durationMs'>): RunReport => ({
     command: 'rotate',
@@ -241,10 +241,10 @@ async function runRotateWithReport(rest: string[]): Promise<void> {
     const config = loadConfig();
     const db = new Db(config.supabaseUrl, config.supabaseServiceRoleKey);
     const outcome = await cmdRotate(config, db, flags);
-    await postRunReport(webhookUrl, finish(outcome));
+    await sendRunReportEmail(emailConfig, finish(outcome));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    await postRunReport(webhookUrl, finish({ status: 'failure', weekNumber: null, detail: message }));
+    await sendRunReportEmail(emailConfig, finish({ status: 'failure', weekNumber: null, detail: message }));
     throw err;
   }
 }
