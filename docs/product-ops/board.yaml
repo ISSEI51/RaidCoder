@@ -1,5 +1,5 @@
 version: 1
-updated_at: "2026-08-25T16:26:18Z"
+updated_at: "2026-08-26T01:30:39Z"
 items:
   - id: "RC-OPS-001"
     project: "RaidCoder"
@@ -24,14 +24,14 @@ items:
   - id: "RC-OPS-002"
     project: "RaidCoder"
     title: "週次 rotate の失敗をメールで検知する"
-    state: "specified"
+    state: "acceptance"
     priority:
       impact: 4
       urgency: 4
       confidence: 4
       ease: 3
       override: "通知手段はメールと決定(2026-08-25)"
-    evidence: "cron は rotate の出力をログファイルに追記するだけで通知経路が無い。PR #8 で Webhook 版を実装したが、通知手段をメールに変更する。あわせて PR #8 の欠陥を修正する: infra/docker-compose.yml の generator は environment を明示列挙しており ROTATE_WEBHOOK_URL が含まれていないため、本番の docker compose run では設定値がコンテナに届かない。DEPLOY.md の「generator/.env に設定」も誤りで、本番の設定は infra/.env に置く"
+    evidence: "PR #8(ca599a2 でメール版に変更)。ローカルで FAILED メールの送信と終了コード1、複数宛先、未設定時、一部設定時を実機確認。compose config で ROTATE_EMAIL_* 4変数が generator に渡ることを確認。generator のテストは67件 PASS。旧 Webhook 版にあった欠陥(compose の environment 未追加で本番に値が届かない、DEPLOY.md の設定場所の誤記)も修正済み。成功時(activate)のメールと本番での到達は未確認"
     approach: "HTTPS のメール送信 API を fetch で呼ぶ(新規依存なし)。既定のエンドポイントは Resend、env で差し替え可能。PR #8 の RunReport / formatRunReport / 3状態通知の構造は維持し、送信部のみ差し替える。SMTP(nodemailer)と AWS SES(SigV4)は新規依存が必要なため採らない。cron の MAILTO はホストへの MTA 導入と AWS のポート25制限のため採らない"
     acceptance_conditions:
       - "rotate が非ゼロ終了したとき、件名に FAILED を含むメールが ROTATE_EMAIL_TO に届く"
@@ -46,9 +46,9 @@ items:
     risk: "検証済みドメインが無い場合、送信 API の差出人制限で宛先がアカウント所有者に限られることがある(未確認)。メールの遅延・迷惑メール振り分けの可能性。API キーが infra/.env に増える"
     size: "M"
     owner: null
-    next_action: "送信 API のアカウントとキーを用意し、feature/rotate-run-notification 上で実装する"
+    next_action: "送信 API のキーを infra/.env に設定し、本番で docker compose run --rm generator rotate を1回実行してメール到達を確認したうえで PR #8 をマージする"
     blocker: null
-    updated_at: "2026-08-25T16:26:18Z"
+    updated_at: "2026-08-26T01:30:39Z"
 
   - id: "RC-UX-001"
     project: "RaidCoder"
