@@ -32,11 +32,6 @@ export default function RootLayout({
         <main className="mx-auto w-full max-w-[96rem] flex-1 px-4 py-6 sm:px-6">
           {children}
         </main>
-        <footer className="border-t border-border">
-          <div className="mx-auto max-w-[96rem] px-4 py-5 text-center text-xs text-muted-foreground sm:px-6">
-            RaidCoder — 毎週月曜 00:00 JST に新しいボスが現れる
-          </div>
-        </footer>
       </body>
     </html>
   );
