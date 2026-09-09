@@ -46,14 +46,21 @@ npx supabase stop       # 停止
 `supabase/tools/problems.mjs` を編集して生成し直す:
 
 ```bash
-cd generator && npm run build && cd ..   # codegen(テンプレート/ハーネス生成器)のビルド
-node supabase/tools/build-seed.mjs       # 検証しつつ seed.sql を生成
+cd generator && npm install && npm run build && cd ..   # codegen(テンプレート/ハーネス生成器)のビルド
+node supabase/tools/build-seed.mjs                      # 検証しつつ seed.sql を生成
 npx supabase db reset
 ```
 
 `build-seed.mjs` は本番の問題生成と同じ `generator/src/codegen.ts` で `code_templates` /
 `judge_harnesses` を作り、公式解 + Python ハーネスを `python3` で全テストケースに対して実行して
 期待出力と一致するかを検証する(不一致なら seed.sql を書き出さずに終了する)。
+
+`problems.mjs` を編集して再生成を忘れていないかは `--check` で確認できる。生成結果が
+committed な `seed.sql` と異なる場合、書き出さずに exit code 1 で終了する:
+
+```bash
+node supabase/tools/build-seed.mjs --check
+```
 
 ## 2. GitHub OAuth をローカルで使う
 

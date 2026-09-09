@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // supabase/seed.sql(ローカル開発用のチュートリアル週)を problems.mjs から生成する。
 //
-//   cd generator && npm run build      # codegen.ts をビルド(初回のみ)
-//   node supabase/tools/build-seed.mjs
+//   cd generator && npm install && npm run build   # codegen.ts をビルド(初回のみ)
+//   node supabase/tools/build-seed.mjs             # 検証して seed.sql を書き出す
+//   node supabase/tools/build-seed.mjs --check     # 書き出さず、既存 seed.sql との一致だけ確認する
 //
 // 手で seed.sql を編集しないこと。問題の追加・修正は problems.mjs を直し、
 // このスクリプトを実行し直す。
@@ -13,18 +14,30 @@
 //   期待出力と一致するかを検証する。さらに素朴な別解(brutePy)とも突き合わせる
 //   (production の materialize.ts が Judge0 でやっている検証のローカル版)
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROBLEMS } from './problems.mjs';
+
+const CHECK_ONLY = process.argv.includes('--check');
 
 // codegen は generator のビルド成果物(dist)を使う。本番の問題生成と同じコードを通すため、
 // このスクリプト用に処理を写経しない。
 let generateCode;
 try {
   ({ generateCode } = await import('../../generator/dist/codegen.js'));
-} catch {
-  console.error('generator がビルドされていません。先に `cd generator && npm run build` を実行してください。');
+} catch (e) {
+  // ERR_MODULE_NOT_FOUND は「未ビルド」だけでなく部分ビルド(dist/signature.js だけ無い等)でも
+  // 起きるため、案内と実際の例外の両方を出す。
+  if (e?.code === 'ERR_MODULE_NOT_FOUND') {
+    console.error(
+      'generator/dist/codegen.js を読み込めませんでした。' +
+        '`cd generator && npm install && npm run build` を実行してください。',
+    );
+  } else {
+    console.error('generator/dist/codegen.js の読み込みに失敗しました。');
+  }
+  console.error(e);
   process.exit(1);
 }
 
@@ -46,12 +59,26 @@ function normalizeOutput(s) {
     .replace(/\n+$/u, '');
 }
 
+const PYTHON_TIMEOUT_MS = 30000;
+
 function runPython(program, input) {
   return execFileSync('python3', ['-c', program], {
     input,
     encoding: 'utf8',
-    timeout: 30000,
+    timeout: PYTHON_TIMEOUT_MS,
   });
+}
+
+/**
+ * execFileSync の例外から表示できる失敗理由を取り出す。
+ * タイムアウトで SIGTERM 終了した場合 stderr は空文字列(undefined ではない)になるため、
+ * `??` ではなく中身の有無で判定する。
+ */
+function failureDetail(e) {
+  const stderr = typeof e.stderr === 'string' ? e.stderr.trim() : '';
+  if (stderr) return stderr;
+  if (e.signal) return `${e.message}(signal=${e.signal} / timeout=${PYTHON_TIMEOUT_MS}ms)`;
+  return e.message;
 }
 
 /** 解答コード + Python ハーネスを全ケースで実行し、期待出力と一致するか確かめる */
@@ -66,7 +93,7 @@ function verify(problem, harnessPy) {
         stdout = runPython(code + harnessPy, c.input);
       } catch (e) {
         throw new Error(
-          `[${problem.rank}] ${c.name}: ${label}の実行に失敗\n${e.stderr ?? e.message}`,
+          `[${problem.rank}] ${c.name}: ${label}の実行に失敗\n${failureDetail(e)}`,
         );
       }
       if (normalizeOutput(stdout) !== normalizeOutput(c.output)) {
@@ -139,7 +166,8 @@ const header = `-- ローカル開発用シード: チュートリアル週(AI�
 -- 本番では generator が毎週これに相当するデータを生成する。
 --
 -- このファイルは自動生成される。直接編集せず、supabase/tools/problems.mjs を編集して
---   cd generator && npm run build && node supabase/tools/build-seed.mjs
+--   cd generator && npm install && npm run build && cd ..
+--   node supabase/tools/build-seed.mjs
 -- を実行し直すこと(生成時に公式解を python3 で全テストケース検証している)。
 --
 -- 問題は本番と同じ LeetCode 形式(CONTRACT §1)。ランクは S/A/B/C/D/E の6問で、
@@ -173,7 +201,27 @@ for (const rank of order) {
 if (ranks.length !== order.length) throw new Error(`問題数が ${ranks.length} 問です(6問必要)`);
 
 const sql = [header, ...problems.map(problemSql)].join('\n');
-writeFileSync(SEED_PATH, sql);
-
 const total = problems.reduce((n, p) => n + p.cases.length, 0);
-console.log(`seed.sql を生成しました: ${problems.length} 問 / テストケース ${total} 件(検証済み)`);
+
+if (CHECK_ONLY) {
+  // problems.mjs を編集して seed.sql の再生成を忘れたまま commit されるのを検出する。
+  let current = null;
+  try {
+    current = readFileSync(SEED_PATH, 'utf8');
+  } catch (e) {
+    console.error(`${SEED_PATH} を読めませんでした。`);
+    console.error(e);
+    process.exit(1);
+  }
+  if (current !== sql) {
+    console.error(
+      'seed.sql が problems.mjs から生成される内容と一致しません。' +
+        '`node supabase/tools/build-seed.mjs` を実行して結果をコミットしてください。',
+    );
+    process.exit(1);
+  }
+  console.log(`seed.sql は最新です: ${problems.length} 問 / テストケース ${total} 件(検証済み)`);
+} else {
+  writeFileSync(SEED_PATH, sql);
+  console.log(`seed.sql を生成しました: ${problems.length} 問 / テストケース ${total} 件(検証済み)`);
+}

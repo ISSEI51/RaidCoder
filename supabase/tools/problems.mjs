@@ -22,6 +22,67 @@
  * @property {string} editorialMd
  */
 
+// ---------------------------------------------------------------- 最大サイズのケース生成
+//
+// 各ランクの最後の隠しケースは、制約の上限サイズのデータを使う。数千個の数値をこのファイルへ
+// 直書きすると差分が読めなくなるため、決定的な線形合同法(LCG)で生成する。
+// 期待出力は公式解と素朴解の両方が build-seed.mjs で毎回突き合わせるので、値は検証される。
+
+/** @returns {() => number} 0 以上 2^32 未満の整数を返す決定的な擬似乱数 */
+function lcg(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state;
+  };
+}
+
+/** [lo, hi] の整数を n 個 */
+function randomInts(seed, n, lo, hi) {
+  const next = lcg(seed);
+  const span = hi - lo + 1;
+  return Array.from({ length: n }, () => lo + (next() % span));
+}
+
+/** int[] のワイヤ形式(signature.ts) */
+function intArrayInput(values) {
+  return `${values.length}\n${values.join(' ')}\n`;
+}
+
+/** int[][] のワイヤ形式(行ごとに「要素数 値...」) */
+function intMatrixInput(rows) {
+  return `${rows.length}\n${rows.map((r) => `${r.length} ${r.join(' ')}`).join('\n')}\n`;
+}
+
+/** str[] のワイヤ形式 */
+function strArrayInput(values) {
+  return `${values.length}\n${values.join('\n')}\n`;
+}
+
+// サイズは「素朴解での突き合わせが 1 ケースあたり 1 秒未満で終わる」ことを基準に決めている
+// (計測値: C 78ms / B 170ms / A 94ms / S 233ms)。
+const LARGE_N = 2000; // 素朴解 O(N^2) は約 2e6 回のループ
+const LARGE_GRID = 50; // 素朴解は上下左右の境界の組で約 1.6e6 通りの長方形を調べる
+
+const LARGE_D = randomInts(20260901, LARGE_N, -1000000, 1000000);
+const LARGE_C = randomInts(20260902, LARGE_N, -1000000, 1000000);
+const LARGE_A = randomInts(20260903, LARGE_N, -1000000, 1000000);
+
+const LARGE_B = (() => {
+  const next = lcg(20260904);
+  return Array.from({ length: LARGE_N }, () => {
+    const start = next() % 1000000;
+    return [start, start + 1 + (next() % 1000)];
+  });
+})();
+
+const LARGE_S = (() => {
+  const next = lcg(20260905);
+  return Array.from({ length: LARGE_GRID }, () =>
+    Array.from({ length: LARGE_GRID }, () => (next() % 100 < 65 ? '1' : '0')).join(''),
+  );
+})();
+
 /** @type {SeedProblem[]} */
 export const PROBLEMS = [
   {
@@ -69,11 +130,13 @@ export const PROBLEMS = [
         return a + b`,
     brutePy: `class Solution:
     def sumTwo(self, a: int, b: int) -> int:
-        s = a
-        step = 1 if b >= 0 else -1
-        for _ in range(abs(b)):
-            s += step
-        return s`,
+        # 加算演算子を使わずビット演算で足す(桁上がりを繰り返す)。
+        # ループ回数は |a|, |b| の大きさではなく 64bit の桁数で決まる。
+        MASK = (1 << 64) - 1
+        x, y = a & MASK, b & MASK
+        while y:
+            x, y = x ^ y, ((x & y) << 1) & MASK
+        return x if x < (1 << 63) else x - (1 << 64)`,
     editorialMd: `2 つの整数を足して返すだけです。
 
 Python の整数は多倍長のためオーバーフローしませんが、Rust / Java / TypeScript では
@@ -114,7 +177,7 @@ $2^{53}$ まで正確なのでそのまま扱えます。
 
 ## 制約
 
-- $1 \\le$ \`nums.length\` $\\le 10^5$
+- $1 \\le$ \`nums.length\` $\\le 2000$
 - $-10^9 \\le$ \`nums[i]\` $\\le 10^9$`,
     cases: [
       { name: 'sample_1', input: '5\n1 2 3 4 5\n', output: '6\n', isSample: true },
@@ -123,6 +186,7 @@ $2^{53}$ まで正確なのでそのまま扱えます。
       { name: 'hidden_2', input: '1\n-2\n', output: '-2\n', isSample: false },
       { name: 'hidden_3', input: '6\n0 1 -4 7 10 3\n', output: '6\n', isSample: false },
       { name: 'hidden_4', input: '2\n1000000000 999999999\n', output: '1000000000\n', isSample: false },
+      { name: 'hidden_5', input: intArrayInput(LARGE_D), output: '-187138\n', isSample: false },
     ],
     solutionPy: `from typing import List
 
@@ -135,11 +199,14 @@ class Solution:
 
 class Solution:
     def sumEvenNumbers(self, nums: List[int]) -> int:
+        # 全要素の和から奇数の和を引く(公式解とは逆向きの数え方。偶数判定も x & 1 で行う)
         total = 0
+        odd = 0
         for x in nums:
-            if abs(x) % 2 == 0:
-                total += x
-        return total`,
+            total += x
+            if x & 1:
+                odd += x
+        return total - odd`,
     editorialMd: `先頭から順に見て、偶数だけを足し合わせます。
 
 負の数の判定に注意してください。言語によって剰余の符号が異なり、C 系の言語では
@@ -179,7 +246,7 @@ class Solution:
 
 ## 制約
 
-- $1 \\le$ \`nums.length\` $\\le 2 \\times 10^5$
+- $1 \\le$ \`nums.length\` $\\le 2000$
 - $-10^9 \\le$ \`nums[i]\` $\\le 10^9$`,
     cases: [
       { name: 'sample_1', input: '5\n1 -2 3 4 -1\n', output: '7\n', isSample: true },
@@ -188,6 +255,7 @@ class Solution:
       { name: 'hidden_2', input: '1\n-100\n', output: '-100\n', isSample: false },
       { name: 'hidden_3', input: '8\n-2 1 -3 4 -1 2 1 -5\n', output: '6\n', isSample: false },
       { name: 'hidden_4', input: '4\n5 5 5 5\n', output: '20\n', isSample: false },
+      { name: 'hidden_5', input: intArrayInput(LARGE_C), output: '24613792\n', isSample: false },
     ],
     solutionPy: `from typing import List
 
@@ -259,7 +327,7 @@ $start_i$ 時刻に始まり $end_i$ 時刻に終わる区間を表します。
 
 ## 制約
 
-- $1 \\le$ \`intervals.length\` $\\le 10^5$
+- $1 \\le$ \`intervals.length\` $\\le 2000$
 - \`intervals[i].length\` $= 2$
 - $0 \\le start_i < end_i \\le 10^9$`,
     cases: [
@@ -294,6 +362,7 @@ $start_i$ 時刻に始まり $end_i$ 時刻に終わる区間を表します。
         output: '1\n',
         isSample: false,
       },
+      { name: 'hidden_5', input: intMatrixInput(LARGE_B), output: '1080\n', isSample: false },
     ],
     solutionPy: `from typing import List
 
@@ -369,7 +438,7 @@ $g$ は全区間の中で終了時刻が最小なので $end_g \\le end_x$ で�
 
 ## 制約
 
-- $1 \\le$ \`nums.length\` $\\le 2 \\times 10^5$
+- $1 \\le$ \`nums.length\` $\\le 2000$
 - $-10^9 \\le$ \`nums[i]\` $\\le 10^9$`,
     cases: [
       { name: 'sample_1', input: '8\n10 9 2 5 3 7 101 18\n', output: '4\n', isSample: true },
@@ -383,6 +452,7 @@ $g$ は全区間の中で終了時刻が最小なので $end_g \\le end_x$ で�
         isSample: false,
       },
       { name: 'hidden_4', input: '7\n-5 -1 -3 0 2 -2 3\n', output: '5\n', isSample: false },
+      { name: 'hidden_5', input: intArrayInput(LARGE_A), output: '83\n', isSample: false },
     ],
     solutionPy: `import bisect
 from typing import List
@@ -411,8 +481,8 @@ class Solution:
                 if nums[j] < nums[i] and dp[j] + 1 > dp[i]:
                     dp[i] = dp[j] + 1
         return max(dp)`,
-    editorialMd: `$O(N^2)$ の DP(「$i$ 番目で終わる最長増加部分列の長さ」)は $N \\le 2 \\times 10^5$ では
-間に合わないため、二分探索で $O(N \\log N)$ にします。
+    editorialMd: `素朴な解法は「$i$ 番目の要素で終わる最長増加部分列の長さ」を $dp_i$ とする
+$O(N^2)$ の DP です。ここでは二分探索を使って $O(N \\log N)$ に落とす解法を説明します。
 
 配列 \`tails\` を「長さ $k+1$ の増加部分列の末尾としてあり得る最小値」を
 \`tails[k]\` に持つものとして管理します。\`tails\` は常に狭義単調増加になります。
@@ -427,7 +497,8 @@ class Solution:
 
 広義単調増加(同じ値を許す)を求める場合は、二分探索を \`bisect_right\` 相当に変えます。
 
-計算量は $O(N \\log N)$ です。`,
+計算量は $O(N \\log N)$ です。本問の制約($N \\le 2000$)なら $O(N^2)$ の DP でも通りますが、
+$N$ が $10^5$ 規模になると $O(N \\log N)$ が必要になります。`,
   },
 
   {
@@ -463,8 +534,8 @@ class Solution:
 
 ## 制約
 
-- $1 \\le$ \`grid.length\` $\\le 200$
-- $1 \\le$ \`grid[i].length\` $\\le 200$
+- $1 \\le$ \`grid.length\` $\\le 50$
+- $1 \\le$ \`grid[i].length\` $\\le 50$
 - \`grid\` の各要素の長さは等しい
 - \`grid[i][j]\` は \`0\` または \`1\``,
     cases: [
@@ -484,6 +555,7 @@ class Solution:
       },
       { name: 'hidden_3', input: '1\n1\n', output: '1\n', isSample: false },
       { name: 'hidden_4', input: '3\n101\n111\n101\n', output: '3\n', isSample: false },
+      { name: 'hidden_5', input: strArrayInput(LARGE_S), output: '21\n', isSample: false },
     ],
     solutionPy: `from typing import List
 
@@ -550,7 +622,8 @@ class Solution:
 1 回だけ出るため、1 行あたり $O(W)$ で求まります。番兵として末尾に高さ $0$ を
 足しておくと、最後にスタックへ残る棒も同じ処理で回収できます。
 
-全体の計算量は $O(HW)$ です。マス目の全探索($O(H^2W^2)$)は
-$H, W \\le 200$ では間に合いません。`,
+全体の計算量は $O(HW)$ です。上下左右の境界を全探索する解法は $O(H^2W^2)$ で、
+本問の制約($H, W \\le 50$)でも約 $1.6 \\times 10^6$ 通りの長方形を調べることになり、
+$H, W$ が大きくなると急速に現実的でなくなります。`,
   },
 ];
