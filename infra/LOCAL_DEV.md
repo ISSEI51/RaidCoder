@@ -22,7 +22,7 @@ macOS / Linux を想定。DB は Supabase CLI(Docker)、ジャッジは `EXECUTO
 npx supabase start
 ```
 
-初回は Docker イメージ取得で数分かかる。起動時に `supabase/migrations/`(スキーマ)と `supabase/seed.sql`(チュートリアル週=ボス+問題3問)が自動適用される。
+初回は Docker イメージ取得で数分かかる。起動時に `supabase/migrations/`(スキーマ)と `supabase/seed.sql`(チュートリアル週=ボス+問題6問。ランク S/A/B/C/D/E 各1問)が自動適用される。
 
 起動後に表示される情報は後で `npx supabase status` でいつでも再表示できる:
 
@@ -38,6 +38,28 @@ service_role key: eyJ...               ← SUPABASE_SERVICE_ROLE_KEY(judge-bridg
 ```bash
 npx supabase db reset   # migration + seed からDBを作り直す(データ全消し)
 npx supabase stop       # 停止
+```
+
+### シード(チュートリアル週)を編集する
+
+`supabase/seed.sql` は自動生成ファイルなので直接編集しない。問題を足す・直すときは
+`supabase/tools/problems.mjs` を編集して生成し直す:
+
+```bash
+cd generator && npm install && npm run build && cd ..   # codegen(テンプレート/ハーネス生成器)のビルド
+node supabase/tools/build-seed.mjs                      # 検証しつつ seed.sql を生成
+npx supabase db reset
+```
+
+`build-seed.mjs` は本番の問題生成と同じ `generator/src/codegen.ts` で `code_templates` /
+`judge_harnesses` を作り、公式解 + Python ハーネスを `python3` で全テストケースに対して実行して
+期待出力と一致するかを検証する(不一致なら seed.sql を書き出さずに終了する)。
+
+`problems.mjs` を編集して再生成を忘れていないかは `--check` で確認できる。生成結果が
+committed な `seed.sql` と異なる場合、書き出さずに exit code 1 で終了する:
+
+```bash
+node supabase/tools/build-seed.mjs --check
 ```
 
 ## 2. GitHub OAuth をローカルで使う

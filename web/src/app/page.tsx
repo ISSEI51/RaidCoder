@@ -33,7 +33,7 @@ export default async function DashboardPage() {
   // active 週が無い場合は「ボス準備中」
   if (!week) {
     return (
-      <div className="flex flex-col items-center gap-4 py-24 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 py-24 text-center">
         <CalendarClock className="size-12 text-muted-foreground" aria-hidden />
         <h1 className="text-xl font-bold">ボス準備中…</h1>
         <p className="max-w-md text-sm text-muted-foreground">
@@ -74,12 +74,12 @@ export default async function DashboardPage() {
 
   return (
     // 左: ボス+クエスト / 右: ランキング+攻撃ログの縦長レール
-    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-      <div className="space-y-5 md:col-span-2">
+    <div className="grid flex-1 grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="flex flex-col gap-5 md:col-span-2">
         <BossPanel week={week} />
 
         {/* 問題一覧 */}
-        <section>
+        <section className="flex flex-1 flex-col">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-lg font-bold">
               <Swords className="size-5 text-muted-foreground" aria-hidden />
@@ -92,28 +92,29 @@ export default async function DashboardPage() {
             )}
           </div>
           {problems.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+            <p className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
               問題を準備中です…
             </p>
           ) : (
             // 片方のランク群しか無い週では1列のまま全幅を使う(右半分を空けない)
             <div
-              className={`grid grid-cols-1 gap-3 ${
+              className={`grid flex-1 grid-cols-1 gap-3 ${
                 problemColumns.length > 1 ? "lg:grid-cols-2" : ""
               }`}
             >
               {problemColumns.map((column) => (
                 <div
                   key={column[0].rank}
-                  className="divide-y divide-border self-start overflow-hidden rounded-lg border border-border"
+                  className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border"
                 >
                   {column.map((problem) => {
                     const stats = statsMap.get(problem.id);
+                    // flex-1: 列に余った高さを各行で均等に分け合う
                     return (
                       <Link
                         key={problem.id}
                         href={`/problems/${problem.id}`}
-                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50"
+                        className="flex flex-1 items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/50"
                       >
                         <RankBadge rank={problem.rank} />
                         <div className="min-w-0 flex-1">

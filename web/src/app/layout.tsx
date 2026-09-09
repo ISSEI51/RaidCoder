@@ -29,7 +29,8 @@ export default function RootLayout({
     <html lang="ja" className={cn("dark font-sans", inter.variable)}>
       <body className="flex min-h-svh flex-col antialiased">
         <Header />
-        <main className="mx-auto w-full max-w-[96rem] flex-1 px-4 py-6 sm:px-6">
+        {/* flex-col + flex-1 で、ページ側が縦の残り空間を使えるようにする */}
+        <main className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col px-4 py-6 sm:px-6">
           {children}
         </main>
       </body>
