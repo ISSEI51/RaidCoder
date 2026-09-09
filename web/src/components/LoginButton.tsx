@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button";
 
 // GitHub OAuth ログインボタン(Supabase Auth)
 // GitHub のブランドマークは lucide に含まれないため、公式マークの SVG をインラインで持つ
-export function LoginButton() {
+export function LoginButton({ next }: { next?: string }) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
     const supabase = createClient();
+    // next は callback 側で内部パスか検証される
+    const callback = new URL("/auth/callback", window.location.origin);
+    if (next) callback.searchParams.set("next", next);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callback.toString(),
       },
     });
     if (error) {
