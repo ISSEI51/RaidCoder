@@ -109,6 +109,11 @@ services:
       AI_PROVIDER: ${AI_PROVIDER:-anthropic-api}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       AI_MODEL: ${AI_MODEL:-claude-sonnet-5}
+      # rotate の実行結果メール (未設定なら送信しない)
+      ROTATE_EMAIL_API_KEY: ${ROTATE_EMAIL_API_KEY:-}
+      ROTATE_EMAIL_FROM: ${ROTATE_EMAIL_FROM:-}
+      ROTATE_EMAIL_TO: ${ROTATE_EMAIL_TO:-}
+      ROTATE_EMAIL_ENDPOINT: ${ROTATE_EMAIL_ENDPOINT:-}
     depends_on:
       - server
     <<: *default-logging

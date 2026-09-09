@@ -5,11 +5,12 @@
 //   node dist/index.js finalize --week <n>
 //   node dist/index.js activate --week <n>
 import { DateTime } from 'luxon';
-import { loadConfig, type Config } from './config.js';
+import { loadConfig, readRotateEmailConfig, type Config } from './config.js';
 import { BASE_DAMAGE, HP_PER_PLAYER } from './constants.js';
 import { Db, type RaidWeekRow, type WeekPayload } from './db.js';
 import { Judge0Client } from './judge0.js';
 import { log, warn } from './log.js';
+import { sendRunReportEmail, type RunReport } from './notify.js';
 import { buildProblem } from './pipeline/problem.js';
 import { generateTheme } from './pipeline/theme.js';
 import { createProvider } from './providers/index.js';
@@ -172,7 +173,14 @@ async function cmdGenerate(config: Config, db: Db, flags: CliFlags): Promise<voi
   await ensureUpcomingWeek(config, db, flags.skipValidation);
 }
 
-async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<void> {
+/** rotate の結果。通知とサマリログに使う */
+interface RotateOutcome {
+  status: 'success' | 'skipped';
+  weekNumber: number | null;
+  detail: string;
+}
+
+async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<RotateOutcome> {
   const now = DateTime.now();
 
   // 1. 現行 active 週の finalize(冪等: 終了時刻を過ぎている場合のみ)
@@ -188,7 +196,11 @@ async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<void>
       log(
         `active な第${active.week_number}週はまだ終了時刻 (${active.ends_at}) 前のため、rotate をスキップします`,
       );
-      return;
+      return {
+        status: 'skipped',
+        weekNumber: active.week_number,
+        detail: `終了時刻 (${active.ends_at}) 前のためローテーションせず`,
+      };
     }
   } else {
     log('active な週がないため finalize をスキップします');
@@ -200,6 +212,41 @@ async function cmdRotate(config: Config, db: Db, flags: CliFlags): Promise<void>
   // 3. 次週を activate(ensureUpcomingWeek が返す週は ends_at が十分先であることを保証済み)
   const result = await db.activateWeek(next.id);
   log(`第${next.week_number}週「${next.boss_name}」を activate しました: ${JSON.stringify(result)}`);
+  return {
+    status: 'success',
+    weekNumber: next.week_number,
+    detail: `「${next.boss_name}」を activate (${JSON.stringify(result)})`,
+  };
+}
+
+/**
+ * rotate を実行し、成功・スキップ・失敗のいずれでも結果を通知する。
+ * 引数の解釈・設定の読み込み・DB クライアントの生成も try の内側に入れる
+ * (環境変数の不足など rotate 開始前の失敗も無通知にしないため)。
+ * 失敗はそのまま再送出するので、プロセスの終了コードは従来どおり 1 になる。
+ */
+async function runRotateWithReport(rest: string[]): Promise<void> {
+  // loadConfig() 自体が失敗しても通知できるよう、メール設定は Config と独立に読む
+  const emailConfig = readRotateEmailConfig();
+  const startedAt = new Date();
+  const finish = (partial: Omit<RunReport, 'command' | 'startedAt' | 'durationMs'>): RunReport => ({
+    command: 'rotate',
+    startedAt: startedAt.toISOString(),
+    durationMs: Date.now() - startedAt.getTime(),
+    ...partial,
+  });
+
+  try {
+    const flags = parseFlags(rest);
+    const config = loadConfig();
+    const db = new Db(config.supabaseUrl, config.supabaseServiceRoleKey);
+    const outcome = await cmdRotate(config, db, flags);
+    await sendRunReportEmail(emailConfig, finish(outcome));
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    await sendRunReportEmail(emailConfig, finish({ status: 'failure', weekNumber: null, detail: message }));
+    throw err;
+  }
 }
 
 async function cmdFinalize(db: Db, weekNumber: number): Promise<void> {
@@ -248,6 +295,12 @@ async function main(): Promise<void> {
     return;
   }
 
+  // rotate だけは引数と設定の読み込みも含めて通知の対象にする
+  if (command === 'rotate') {
+    await runRotateWithReport(rest);
+    return;
+  }
+
   const flags = parseFlags(rest);
   const config = loadConfig();
   const db = new Db(config.supabaseUrl, config.supabaseServiceRoleKey);
@@ -255,9 +308,6 @@ async function main(): Promise<void> {
   switch (command) {
     case 'generate':
       await cmdGenerate(config, db, flags);
-      break;
-    case 'rotate':
-      await cmdRotate(config, db, flags);
       break;
     case 'finalize':
       await cmdFinalize(db, requireWeek(flags));

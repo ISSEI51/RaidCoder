@@ -1,4 +1,6 @@
 // 環境変数の読み込み (CONTRACT §9 の generator の項の変数のみ使用)
+import { warn } from './log.js';
+import type { EmailConfig } from './notify.js';
 
 export type AiProviderName = 'claude-cli' | 'anthropic-api';
 
@@ -38,5 +40,38 @@ export function loadConfig(): Config {
     aiProvider,
     anthropicApiKey: optional('ANTHROPIC_API_KEY'),
     aiModel: optional('AI_MODEL') ?? 'claude-sonnet-5',
+  };
+}
+
+/** 既定の送信先 API。Bearer 認証 + JSON body の API なら差し替えられる */
+const DEFAULT_EMAIL_ENDPOINT = 'https://api.resend.com/emails';
+
+/**
+ * rotate の実行結果を送るメール設定(未設定なら通知しない)。
+ * loadConfig() 自体が失敗したときにも通知したいので、Config とは独立して読む。
+ */
+export function readRotateEmailConfig(): EmailConfig | undefined {
+  const apiKey = optional('ROTATE_EMAIL_API_KEY');
+  const from = optional('ROTATE_EMAIL_FROM');
+  const to = optional('ROTATE_EMAIL_TO')
+    ?.split(',')
+    .map((address) => address.trim())
+    .filter((address) => address !== '');
+
+  if (!apiKey || !from || !to || to.length === 0) {
+    // 一部だけ設定されている状態は設定漏れなので、黙って無効化せず警告する
+    if (apiKey || from || to?.length) {
+      warn(
+        'ROTATE_EMAIL_API_KEY / ROTATE_EMAIL_FROM / ROTATE_EMAIL_TO の一部が未設定のため、メール通知は無効です',
+      );
+    }
+    return undefined;
+  }
+
+  return {
+    apiKey,
+    from,
+    to,
+    endpoint: optional('ROTATE_EMAIL_ENDPOINT') ?? DEFAULT_EMAIL_ENDPOINT,
   };
 }
